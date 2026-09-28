@@ -6,9 +6,7 @@ name: Integration suite
 on:
   workflow_dispatch:
   push:
-    # ВРЕМЕННО для прогона 0.5.0: боту недоступен workflow_dispatch (403),
-    # поэтому ветка добавлена сюда. Откатить отдельным коммитом после зелёного прогона.
-    branches: [main, arena/01a0e8cf-settled-lands]
+    branches: [main]
     paths:
       - 'src/**'
       - 'build.gradle'
