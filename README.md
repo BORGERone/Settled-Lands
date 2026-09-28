@@ -44,7 +44,7 @@
 | [GITHUB.md](GITHUB.md) | Как залить репозиторий и как продолжить работу в новом ИИ-диалоге. |
 | [CHANGELOG-0.5.0.md](CHANGELOG-0.5.0.md) | История версий: 0.2.0, 0.3.0, 0.4.0, 0.4.1, 0.4.2, 0.4.3, 0.4.4, 0.5.0. |
 
-Готовый файл мода: `release/settledlands-0.5.0.jar` (появится после сборки 0.5.0).
+Готовый файл мода: `release/settledlands-0.5.0.jar` (собран в CI, артефакт `settledlands-jar`; в репозиторий добавится на релизе).
 Исходная модель с анимациями: [`animation-source/defiler.bbmodel`](animation-source/defiler.bbmodel).
 
 ## Установка

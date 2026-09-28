@@ -40,21 +40,14 @@
 
 ## Проверки
 
-Статус: **код и тесты написаны, прогон обязателен**. Сборка и smoke-набор не запускались
-в этой песочнице (нет JDK), поэтому перед выпуском JAR прогоните на машине с JDK 21:
+Статус: **зелёный прогон в GitHub Actions** (ветка `arena/01a0e8cf-settled-lands`):
 
-```bash
-CI=true ./gradlew build --no-daemon
-CI=true ./gradlew runServer -PsanctitySmoke --no-daemon
-```
+- `Build` — сборка + 36 unit-тестов, JAR выложен артефактом `settledlands-jar`;
+- `Integration suite` — 119 проверок на настоящем выделенном сервере, маркер `PASSED`,
+  журнал и `table-report.txt` — в артефакте `smoke-log`.
 
-Перед smoke-прогоном проверьте сигнатуры ванили через `javap` (миксин и подсказки
-опираются на них):
-
-```bash
-javap -p -classpath build/moddev/artifacts/neoforge-21.1.252.jar net.minecraft.world.inventory.EnchantmentMenu
-javap -p -classpath build/moddev/artifacts/neoforge-21.1.252.jar net.neoforged.neoforge.event.entity.player.ItemTooltipEvent
-```
+Сигнатуры ванили (`EnchantmentMenu`, `ItemTooltipEvent`), на которые опираются миксин
+и подсказки, подтверждены тем, что стол и сервер отработали на настоящем раннере.
 
 Что добавлено в тесты:
 

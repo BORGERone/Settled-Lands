@@ -1,25 +1,21 @@
 # Проверки Settled Lands
 
-## 0.5.0 — код готов, прогон ожидается
+## 0.5.0 — проверено 28 сентября 2026 (GitHub Actions, ветка `arena/01a0e8cf-settled-lands`)
 
-Код и тесты 0.5.0 написаны в песочнице без JDK и **не запускались**.
-Перед выпуском JAR обязателен прогон на машине с JDK 21:
+- `Build` — зелёный: сборка + 36 unit-тестов, JAR выложен артефактом `settledlands-jar`.
+  Run: https://github.com/BORGERone/Settled-Lands/actions/runs/36462563418
+- `Integration suite` — зелёный: 119 проверок на настоящем выделенном сервере
+  (39 Sanctity + 33 Ritual + 20 Fire + 27 Table), маркер `PASSED` записан.
+  Run: https://github.com/BORGERone/Settled-Lands/actions/runs/36463110293
+  Журнал со строками `CHECK OK` и `table-report.txt` — в артефакте `smoke-log` этого прогона.
 
-```bash
-CI=true ./gradlew build --no-daemon                 # сборка + 36 unit-тестов
-CI=true ./gradlew runServer -PsanctitySmoke --no-daemon   # ожидается 119 проверок
-```
-
-Перед прогоном подтвердить сигнатуры ванили через `javap`
-(`EnchantmentMenu.slotsChanged/costs/enchantClue/levelClue/clickMenuButton`,
-`ItemTooltipEvent.getItemStack/getToolTip`), см. `CHANGELOG-0.5.0.md`.
-После зелёного прогона: обновить `TABLE-TEST-RESULTS.txt`, этот файл
-и собрать `release/settledlands-0.5.0.jar`.
-
-Что должны доказать новые проверки: слабый стол предлагает I только в первой строке;
+Доказано новыми проверками: слабый стол предлагает I только в первой строке;
 полный стол предлагает II ровно в одной из строк 2–3; пустая строка не кликается
 и ничего не тратит; меч держит три строки. Ручная проверка (вид пустых строк
 и подсказок) — в `docs/PLAYTEST-RU.md`.
+
+Оговорка: `TABLE-TEST-RESULTS.txt` оставлен от прогона 0.4.4 — текст нового журнала
+из песочницы без сети не скачать, первоисточник результата 0.5.0 — Actions выше.
 
 ## 0.4.4 — проверено 28 сентября 2026
 
