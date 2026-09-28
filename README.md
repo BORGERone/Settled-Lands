@@ -38,13 +38,13 @@
 | [AI-HANDOFF.md](AI-HANDOFF.md) | Состояние проекта, карта кода, принятые решения, что проверено, что дальше. Точка входа для продолжения работы. |
 | [docs/ARCHITECTURE-RU.md](docs/ARCHITECTURE-RU.md) | Почему сетка фиксированная, как устроены индексы и таймеры. |
 | [docs/PLAYTEST-RU.md](docs/PLAYTEST-RU.md) | Чек-листы ручной проверки в игре. |
-| [docs/TESTING-HOWTO-RU.md](docs/TESTING-HOWTO-RU.md) | Как устроены тесты: unit и smoke-набор, приёмы, правила, как добавить новые проверки. |
+| [docs/TESTING-HOWTO-RU.md](docs/TESTING-HOWTO-RU.md) | Как устроены автотесты: обвязка, приёмы, правила и текст для передачи другому ИИ. |
 | [VERIFICATION.md](VERIFICATION.md) | Что и как проверено автоматически, что осталось непроверенным. |
 | [TESTING.md](TESTING.md) | Сценарии для тестового мира. |
 | [GITHUB.md](GITHUB.md) | Как залить репозиторий и как продолжить работу в новом ИИ-диалоге. |
 | [CHANGELOG-0.5.0.md](CHANGELOG-0.5.0.md) | История версий: 0.2.0, 0.3.0, 0.4.0, 0.4.1, 0.4.2, 0.4.3, 0.4.4, 0.5.0. |
 
-Готовый файл мода: `dist/settledlands-0.5.0.jar` (появится после сборки 0.5.0; предыдущий — `dist/settledlands-0.4.4.jar`).
+Готовый файл мода: `release/settledlands-0.5.0.jar` (появится после сборки 0.5.0).
 Исходная модель с анимациями: [`animation-source/defiler.bbmodel`](animation-source/defiler.bbmodel).
 
 ## Установка

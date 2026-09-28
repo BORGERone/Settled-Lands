@@ -14,7 +14,7 @@ CI=true ./gradlew runServer -PsanctitySmoke --no-daemon   # ожидается 1
 (`EnchantmentMenu.slotsChanged/costs/enchantClue/levelClue/clickMenuButton`,
 `ItemTooltipEvent.getItemStack/getToolTip`), см. `CHANGELOG-0.5.0.md`.
 После зелёного прогона: обновить `TABLE-TEST-RESULTS.txt`, этот файл
-и собрать `dist/settledlands-0.5.0.jar`.
+и собрать `release/settledlands-0.5.0.jar`.
 
 Что должны доказать новые проверки: слабый стол предлагает I только в первой строке;
 полный стол предлагает II ровно в одной из строк 2–3; пустая строка не кликается

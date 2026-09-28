@@ -1,0 +1,67 @@
+name: Integration suite
+
+# Набор запускает настоящий выделенный сервер и выполняет 119 проверок.
+# Он тяжелее обычной сборки, поэтому по умолчанию запускается вручную
+# (вкладка Actions -> Integration suite -> Run workflow) и на push в main.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'build.gradle'
+      - 'gradle.properties'
+      - 'smoke-server/**'
+      - '.github/workflows/smoke.yml'
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      CI: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make the wrapper executable
+        run: chmod +x gradlew
+
+      - name: Prepare the test world
+        run: |
+          mkdir -p run-smoke
+          cp smoke-server/server.properties run-smoke/server.properties
+          echo "eula=true" > run-smoke/eula.txt
+
+      - name: Run the integration suite
+        run: ./gradlew runServer -PsanctitySmoke --no-daemon
+
+      - name: Show the result
+        if: always()
+        run: |
+          echo "=== marker ==="
+          cat run-smoke/sanctity-smoke-result.txt || echo "marker missing"
+          echo "=== checks ==="
+          grep -a "CHECK OK" run-smoke/logs/latest.log | tail -n 40 || true
+          echo "=== tail of the log ==="
+          tail -n 60 run-smoke/logs/latest.log || true
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-log
+          if-no-files-found: warn
+          path: |
+            run-smoke/logs/latest.log
+            run-smoke/sanctity-smoke-result.txt
+            run-smoke/table-report.txt
