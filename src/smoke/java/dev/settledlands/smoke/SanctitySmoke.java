@@ -73,8 +73,10 @@ public final class SanctitySmoke {
         player.experienceLevel=30;
         EnchantmentMenu menu=new EnchantmentMenu(99,player.getInventory(),ContainerLevelAccess.create(level,table));
         menu.getSlot(1).set(new ItemStack(Items.LAPIS_LAZULI,3));menu.getSlot(0).set(banner);
-        check(menu.costs[2]>0 && menu.enchantClue[2]>=0,"table offers a third-row enchantment for a patterned banner");
-        check(menu.clickMenuButton(player,2),"table enchant action succeeds");
+        int row=-1;
+        for(int i=0;i<3;i++)if(menu.costs[i]>0&&menu.enchantClue[i]>=0) {row=i;break;}
+        check(row>=0,"table offers an enchantment for a patterned banner");
+        check(menu.clickMenuButton(player,row),"table enchant action succeeds");
         ItemStack enchanted=menu.getSlot(0).getItem().copy();
         int tableLevel=EnchantmentHelper.getItemEnchantmentLevel(enchant,enchanted);
         check(tableLevel>=0&&tableLevel<=2,"real table click never exceeds the new maximum level "+tableLevel);
@@ -86,7 +88,7 @@ public final class SanctitySmoke {
         ItemStack weak=EnchantmentHelper.enchantItem(RandomSource.create(7),new ItemStack(Items.WHITE_BANNER),16,enchantmentStream(level));
         check(EnchantmentHelper.getItemEnchantmentLevel(enchant,strong)==2,"maximum table power produces Sanctity II");
         check(EnchantmentHelper.getItemEnchantmentLevel(enchant,weak)==1,"lower table power still produces Sanctity I");
-        check(player.experienceLevel==27 && menu.getSlot(1).getItem().isEmpty(),"table consumes 3 levels and 3 lapis");
+        check(player.experienceLevel==30-(row+1) && menu.getSlot(1).getItem().getCount()==3-(row+1),"table consumes "+(row+1)+" levels and lapis");
         check(patterns.equals(enchanted.get(DataComponents.BANNER_PATTERNS)),"enchanting preserves patterns");
         check(enchanted.getHoverName().getString().equals("Pattern survival test"),"enchanting preserves custom name");
         level.setBlockAndUpdate(pos.below(),Blocks.STONE.defaultBlockState());level.setBlockAndUpdate(pos,Blocks.AIR.defaultBlockState());

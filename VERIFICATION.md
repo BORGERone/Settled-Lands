@@ -1,4 +1,27 @@
-# Проверки Settled Lands 0.4.4
+# Проверки Settled Lands
+
+## 0.5.0 — код готов, прогон ожидается
+
+Код и тесты 0.5.0 написаны в песочнице без JDK и **не запускались**.
+Перед выпуском JAR обязателен прогон на машине с JDK 21:
+
+```bash
+CI=true ./gradlew build --no-daemon                 # сборка + 36 unit-тестов
+CI=true ./gradlew runServer -PsanctitySmoke --no-daemon   # ожидается 119 проверок
+```
+
+Перед прогоном подтвердить сигнатуры ванили через `javap`
+(`EnchantmentMenu.slotsChanged/costs/enchantClue/levelClue/clickMenuButton`,
+`ItemTooltipEvent.getItemStack/getToolTip`), см. `CHANGELOG-0.5.0.md`.
+После зелёного прогона: обновить `TABLE-TEST-RESULTS.txt`, этот файл
+и собрать `dist/settledlands-0.5.0.jar`.
+
+Что должны доказать новые проверки: слабый стол предлагает I только в первой строке;
+полный стол предлагает II ровно в одной из строк 2–3; пустая строка не кликается
+и ничего не тратит; меч держит три строки. Ручная проверка (вид пустых строк
+и подсказок) — в `docs/PLAYTEST-RU.md`.
+
+## 0.4.4 — проверено 28 сентября 2026
 
 Minecraft 1.21.1, NeoForge 21.1.252, JDK 21. Дата: 28 сентября 2026.
 
