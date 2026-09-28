@@ -1,0 +1,98 @@
+[13:19:39] [Server thread/INFO] [ne.ne.ne.ga.GameTestHooks/]: Enabled Gametest Namespaces: [settledlands]
+[13:19:39] [Server thread/INFO] [settledlands/]: [settledlands] loaded 0.4.1 (main); Sanctity max level = 2 as expected
+SANCTITY CHECK OK: restart restores enchantment from real saved chunk
+SANCTITY CHECK OK: restart rebuilds loaded-chunk protection index
+SANCTITY CHECK OK: data-driven enchantment has two levels
+SANCTITY CHECK OK: level II is reachable on banners through normal enchanting rules
+SANCTITY CHECK OK: banner accepted as enchantable by actual mixed-in Item code
+SANCTITY CHECK OK: enchantability value 10
+SANCTITY CHECK OK: unrelated item remains not enchantable
+SANCTITY CHECK OK: table offers a third-row enchantment for a patterned banner
+SANCTITY CHECK OK: table enchant action succeeds
+SANCTITY CHECK OK: real table click never exceeds the new maximum level 2
+SANCTITY CHECK OK: level I is fixed for the protection sequence
+SANCTITY CHECK OK: maximum table power produces Sanctity II
+SANCTITY CHECK OK: lower table power still produces Sanctity I
+SANCTITY CHECK OK: table consumes 3 levels and 3 lapis
+SANCTITY CHECK OK: enchanting preserves patterns
+SANCTITY CHECK OK: enchanting preserves custom name
+SANCTITY CHECK OK: normal item placement creates banner block entity
+SANCTITY CHECK OK: placement indexes the enchanted banner
+SANCTITY CHECK OK: placement preserves patterns
+SANCTITY CHECK OK: vanilla pick-block preserves Sanctity
+SANCTITY CHECK OK: holy cell blocks natural zombie spawn check
+SANCTITY CHECK OK: spawn eggs are not blocked
+SANCTITY CHECK OK: no protection leaks to adjacent or lower cells
+SANCTITY CHECK OK: block entity NBT round-trip preserves enchantment and patterns
+SANCTITY CHECK OK: breaking the sole banner removes protection immediately
+SANCTITY CHECK OK: exactly one banner drops; no duplication
+SANCTITY CHECK OK: normal drop retains enchantment and pattern
+SANCTITY CHECK OK: normal drop retains custom name
+SANCTITY CHECK OK: banner never overwrites T or P
+SANCTITY CHECK OK: multiple independent sources counted
+SANCTITY CHECK OK: command-style no-drop removal leaves second source active
+SANCTITY CHECK OK: destroying the support removes last protection
+SANCTITY CHECK OK: support-loss drop retains Sanctity
+SANCTITY CHECK OK: item placement supports wall banners
+SANCTITY CHECK OK: wall banner protects its cell
+SANCTITY CHECK OK: wall support destruction removes protection
+SANCTITY CHECK OK: wall drop preserves Sanctity and pattern
+SANCTITY CHECK OK: explosion destroys banner and removes protection
+SANCTITY CHECK OK: any surviving explosion drop retains enchantment and pattern
+RITUAL CHECK OK: ordinary zombie receives ritual goal
+RITUAL CHECK OK: zombie in adjacent cell cannot target banner
+RITUAL CHECK OK: same-cell AI selects holy banner without line-of-sight/pathfinding
+RITUAL CHECK OK: AI starts intro and disables ordinary attacks
+RITUAL CHECK OK: second zombie cannot start even on another banner while global slot busy
+RITUAL CHECK OK: both banner timers start with cult
+RITUAL CHECK OK: ritual zombie cannot be moved by normal travel
+RITUAL CHECK OK: ritual banner loot suppressed immediately
+RITUAL CHECK OK: timers survive block entity NBT persistence
+RITUAL CHECK OK: 10 and 20 second boundaries are independent
+RITUAL CHECK OK: killing caster releases global slot and freeze flags
+RITUAL CHECK OK: killing caster does not clear banner timers
+RITUAL CHECK OK: same banner cannot be retried during 20 second immunity
+RITUAL CHECK OK: normal banner loot returns after 10 seconds
+RITUAL CHECK OK: banner can be targeted again after 20 seconds
+RITUAL CHECK OK: fresh banner can start ritual
+RITUAL CHECK OK: removing target aborts ritual and restores caster AI
+RITUAL CHECK OK: breaking marked banner yields no dropped banner
+RITUAL CHECK OK: completion case starts
+RITUAL CHECK OK: cult phase lasts 40 ticks without completing
+RITUAL CHECK OK: cultIDE starts with spectral-style glow
+RITUAL CHECK OK: nonlethal damage does not cancel ritual
+RITUAL CHECK OK: banner survives through tick 139
+RITUAL CHECK OK: at tick 140 banner destroyed and zombie removed
+RITUAL CHECK OK: exactly one stray replaces caster
+RITUAL CHECK OK: replacement stray receives its vanilla bow
+RITUAL CHECK OK: one real lightning entity is spawned
+RITUAL CHECK OK: ritual lightning charges nearby creeper
+RITUAL CHECK OK: ritual lightning damages nearby mob
+RITUAL CHECK OK: own replacement is protected from ritual lightning
+RITUAL CHECK OK: ritual lightning creates no block fire even with doFireTick=true and HARD
+RITUAL CHECK OK: successful ritual also respects no-drop timer
+RITUAL CHECK OK: loading an interrupted caster restores AI and previous glow flag
+RITUAL SMOKE PASSED: 33 checks
+FIRE CHECK OK: banner keeps the applied level and only II is a burning banner
+FIRE CHECK OK: level II is still a normal Sanctity source for spawn protection
+FIRE CHECK OK: only the level II cell is indexed for burning
+FIRE CHECK OK: undead standing in the level II cell catches fire
+FIRE CHECK OK: level I cell and the neighbouring cell stay unlit
+FIRE CHECK OK: non-undead mobs are unaffected
+FIRE CHECK OK: all undead types are affected, not only zombies
+FIRE CHECK OK: fire-immune undead stay unlit
+FIRE CHECK OK: water still extinguishes, as in vanilla
+FIRE CHECK OK: burning is not extended while the mob is still alight
+FIRE CHECK OK: an extinguished undead is re-ignited for exactly one vanilla fire
+FIRE CHECK OK: burning deals real vanilla fire damage
+FIRE CHECK OK: no block fire anywhere in the burning cell, even with doFireTick and HARD
+FIRE CHECK OK: flammable floor planks stay untouched and the burning mob survives the test window
+FIRE CHECK OK: a level II banner can still be desecrated
+FIRE CHECK OK: the ritual caster is not exempt from burning
+FIRE CHECK OK: ritual no-drop ward also silences the level II banner
+FIRE CHECK OK: banner removal stops any further ignition
+FIRE CHECK OK: destroyed level II banner drops a level II banner item
+FIRE CHECK OK: level I still drops exactly level I
+FIRE SMOKE PASSED: 20 checks
+SANCTITY SMOKE PASSED: 92 checks
+BUILD SUCCESSFUL in 34s

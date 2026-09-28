@@ -1,0 +1,38 @@
+SANCTITY CHECK OK: restart restores enchantment from real saved chunk
+SANCTITY CHECK OK: restart rebuilds loaded-chunk protection index
+SANCTITY CHECK OK: data-driven enchantment max level is 1
+SANCTITY CHECK OK: banner accepted as enchantable by actual mixed-in Item code
+SANCTITY CHECK OK: enchantability value 10
+SANCTITY CHECK OK: unrelated item remains not enchantable
+SANCTITY CHECK OK: table offers a third-row enchantment for a patterned banner
+SANCTITY CHECK OK: table enchant action succeeds
+SANCTITY CHECK OK: table result has Sanctity I
+SANCTITY CHECK OK: table consumes 3 levels and 3 lapis
+SANCTITY CHECK OK: enchanting preserves patterns
+SANCTITY CHECK OK: enchanting preserves custom name
+SANCTITY CHECK OK: normal item placement creates banner block entity
+SANCTITY CHECK OK: placement indexes the enchanted banner
+SANCTITY CHECK OK: placement preserves patterns
+SANCTITY CHECK OK: vanilla pick-block preserves Sanctity
+SANCTITY CHECK OK: holy cell blocks natural zombie spawn check
+SANCTITY CHECK OK: spawn eggs are not blocked
+SANCTITY CHECK OK: no protection leaks to adjacent or lower cells
+SANCTITY CHECK OK: block entity NBT round-trip preserves enchantment and patterns
+SANCTITY CHECK OK: breaking the sole banner removes protection immediately
+SANCTITY CHECK OK: exactly one banner drops; no duplication
+SANCTITY CHECK OK: normal drop retains enchantment and pattern
+SANCTITY CHECK OK: normal drop retains custom name
+SANCTITY CHECK OK: banner never overwrites T or P
+SANCTITY CHECK OK: multiple independent sources counted
+SANCTITY CHECK OK: command-style no-drop removal leaves second source active
+SANCTITY CHECK OK: destroying the support removes last protection
+SANCTITY CHECK OK: support-loss drop retains Sanctity
+SANCTITY CHECK OK: item placement supports wall banners
+SANCTITY CHECK OK: wall banner protects its cell
+SANCTITY CHECK OK: wall support destruction removes protection
+SANCTITY CHECK OK: wall drop preserves Sanctity and pattern
+SANCTITY CHECK OK: explosion destroys banner and removes protection
+SANCTITY CHECK OK: any surviving explosion drop retains enchantment and pattern
+SANCTITY RESTART FIXTURE: 8 120 8
+SANCTITY SMOKE PASSED: 35 checks
+BUILD SUCCESSFUL in 23s

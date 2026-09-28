@@ -1,0 +1,23 @@
+{
+  "description": {
+    "translate": "enchantment.settledlands.sanctity",
+    "fallback": "Sanctity"
+  },
+  "supported_items": "#minecraft:banners",
+  "primary_items": "#minecraft:banners",
+  "weight": 5,
+  "max_level": 2,
+  "min_cost": {
+    "base": 1,
+    "per_level_above_first": 19
+  },
+  "max_cost": {
+    "base": 60,
+    "per_level_above_first": 20
+  },
+  "anvil_cost": 4,
+  "slots": [
+    "any"
+  ],
+  "effects": {}
+}
