@@ -16,7 +16,7 @@
 cd путь/к/распакованной/папке
 git init
 git add .
-git commit -m "Settled Lands 0.4.3"
+git commit -m "Settled Lands 0.4.4"
 git branch -M main
 git remote add origin https://github.com/ВАШ_ЛОГИН/settled-lands.git
 git push -u origin main
@@ -25,12 +25,12 @@ git push -u origin main
 ## Что уже готово в архиве
 
 - `README.md` — полное описание мода, установка, механика, команды, ограничения.
-- `CHANGELOG-0.2.0.md … CHANGELOG-0.4.3.md` — история версий.
+- `CHANGELOG-0.2.0.md … CHANGELOG-0.4.4.md` — история версий.
 - `VERIFICATION.md`, `TESTING.md`, `*-TEST-RESULTS.txt` — что и как проверено.
 - `AI-HANDOFF.md` — контекст для следующего ИИ-диалога (и краткая карта кода).
 - `docs/ARCHITECTURE-RU.md`, `docs/PLAYTEST-RU.md` — объяснение решений и чек-листы.
 - `src/` — исходники, включая `src/test` (unit) и `src/smoke` (интеграционный набор).
-- `dist/settledlands-0.4.3.jar` — готовый файл мода.
+- `dist/settledlands-0.4.4.jar` — готовый файл мода.
 - `animation-source/defiler.bbmodel` — исходная модель с анимациями.
 - `build.gradle`, `gradle.properties`, `gradlew`, `.github/workflows/build.yml` — сборка
   и автоматическая проверка на GitHub Actions при каждом push.
@@ -39,6 +39,30 @@ git push -u origin main
 
 Держите `dist/` в репозитории (он маленький), а на странице **Releases** прикладывайте
 тот же JAR и короткое описание изменений — так игрокам удобнее скачивать.
+
+## Автоматические проверки на GitHub
+
+В репозитории есть два workflow (`.github/workflows/`). Папку с точкой браузер при
+перетаскивании файлов не загружает, поэтому её нужно создать через
+**Add file → Create new file** и вписать полный путь в поле имени.
+
+| Workflow | Когда запускается | Что делает |
+|---|---|---|
+| `build.yml` | на каждый push и pull request, плюс вручную | статические проверки `tools/static-check.py`, затем `./gradlew build` — это сборка и 27 unit-тестов; собранный мод выкладывается артефактом `settledlands-jar` |
+| `smoke.yml` | вручную и на push в `main` при изменении `src/**` | поднимает настоящий выделенный сервер и выполняет **115 интеграционных проверок**; журнал и маркер результата выкладываются артефактом `smoke-log` |
+
+Запуск вручную: вкладка **Actions** → выбрать workflow → **Run workflow**.
+
+Как читать результаты:
+
+- зелёная галочка у `Build` — сборка и unit-тесты прошли;
+- зелёная галочка у `Integration suite` — прошли все 115 проверок на сервере, в артефакте
+  `smoke-log` лежит журнал со строками `CHECK OK`;
+- красный крест — откройте лог шага, в конце будет причина; для интеграционного набора
+  смотрите строку `SANCTITY SMOKE FAILED` и текст ошибки под ней.
+
+Это удобный способ проверить чужую правку, не имея Java на своей машине: залейте ветку,
+дождитесь результата, при необходимости приложите журнал из артефакта.
 
 ## Продолжение работы в новом ИИ-диалоге
 
