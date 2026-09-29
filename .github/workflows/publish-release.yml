@@ -71,7 +71,7 @@ jobs:
       GH_REPO: ${{ github.repository }}
     steps:
       - name: Checkout (за описанием релиза)
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Пропустить, если релиз уже published
         id: guard
