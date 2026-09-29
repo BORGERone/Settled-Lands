@@ -99,7 +99,11 @@ jobs:
         run: |
           ls -l dist-jar
           sha256sum dist-jar/*.jar
-          unzip -l dist-jar/*.jar | grep -E 'neoforge.mods.toml|settledlands' | head -20
+          # Список содержимого пишем в файл и только потом фильтруем: канал
+          # unzip | grep | head обрывается по SIGPIPE, а в Actions включён pipefail.
+          unzip -l dist-jar/*.jar > jar-list.txt
+          grep -E 'neoforge.mods.toml|settledlands' jar-list.txt | head -20 || true
+          echo "Всего записей в JAR: $(grep -c '^ *[0-9]' jar-list.txt || true)"
 
       - name: Создать релиз
         if: steps.guard.outputs.skip == 'false' && env.DRY_RUN != 'true'
