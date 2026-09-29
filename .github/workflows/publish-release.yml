@@ -1,32 +1,38 @@
 name: Publish release
 
-# Публикует релиз на GitHub: берёт JAR из готового артефакта прогона Build
+# Публикует релиз на GitHub: берёт JAR из готового артефакта указанного прогона Build
 # и вешает его на тег, поставленный на нужный коммит.
 #
-# Зачем: в песочнице без JDK и без доступа к хранилищу артефактов скачать JAR
-# нельзя, а Actions — может. Так релиз всегда собирается из артефакта CI,
-# а не из файла, собранного руками.
+# Зачем: в песочнице без JDK и с закрытым хранилищем артефактов скачать JAR нельзя,
+# а Actions — может. Так релиз всегда собирается из артефакта CI, а не из файла,
+# сделанного руками.
 #
-# Запуск: Actions -> Publish release -> Run workflow.
+# Как запустить вручную (после мержа в main):
+#   Actions -> Publish release -> Run workflow -> указать run_id, tag, target_sha.
+# Значения по умолчанию ниже - это релиз 0.5.0; их же использует запуск по push.
 
 on:
   workflow_dispatch:
     inputs:
       run_id:
         description: 'ID прогона Build, откуда взять JAR (например 36540243406)'
-        required: true
+        required: false
+        default: '36540243406'
         type: string
       tag:
         description: 'Тег релиза, например v0.5.0'
-        required: true
+        required: false
+        default: 'v0.5.0'
         type: string
       target_sha:
         description: 'Коммит, на который встанет тег'
-        required: true
+        required: false
+        default: '82ce611c36150be332f72413e882bb95f53b65b1'
         type: string
       title:
         description: 'Заголовок релиза'
-        required: true
+        required: false
+        default: '0.5.0'
         type: string
       notes_file:
         description: 'Файл с описанием релиза (в репозитории)'
@@ -41,12 +47,27 @@ on:
       dry_run:
         description: 'Только скачать и показать, релиз не создавать'
         required: false
-        default: true
+        default: false
         type: boolean
+  # Временный запуск по push: нужен, потому что токен сессии не имеет права
+  # actions:write и не может запустить workflow через API. После публикации
+  # релиза этот блок удаляется, остаётся только ручной запуск.
+  push:
+    paths:
+      - '.github/workflows/publish-release.yml'
 
 permissions:
   contents: write   # создание релиза и тега
   actions: read     # скачивание артефакта чужого прогона
+
+env:
+  RUN_ID: ${{ inputs.run_id || '36540243406' }}
+  TAG: ${{ inputs.tag || 'v0.5.0' }}
+  TARGET_SHA: ${{ inputs.target_sha || '82ce611c36150be332f72413e882bb95f53b65b1' }}
+  TITLE: ${{ inputs.title || '0.5.0' }}
+  NOTES_FILE: ${{ inputs.notes_file || 'RELEASE-NOTES-0.5.0.md' }}
+  ARTIFACT_NAME: ${{ inputs.artifact_name || 'settledlands-jar' }}
+  DRY_RUN: ${{ inputs.dry_run || 'false' }}
 
 jobs:
   publish:
@@ -58,29 +79,39 @@ jobs:
       - name: Checkout (за описанием релиза)
         uses: actions/checkout@v5
 
-      - name: Скачать JAR из артефакта прогона ${{ inputs.run_id }}
+      - name: Пропустить, если релиз уже published
+        id: guard
+        run: |
+          if gh release view "$TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
+            echo "Релиз $TAG уже существует - ничего не публикуем."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Скачать JAR из артефакта прогона ${{ env.RUN_ID }}
+        if: steps.guard.outputs.skip == 'false'
         run: |
           rm -rf dist-jar
-          gh run download '${{ inputs.run_id }}' \
-            -n '${{ inputs.artifact_name }}' \
-            -D dist-jar --repo "$GH_REPO"
+          gh run download "$RUN_ID" -n "$ARTIFACT_NAME" -D dist-jar --repo "$GH_REPO"
 
       - name: Показать, что скачали
+        if: steps.guard.outputs.skip == 'false'
         run: |
           ls -l dist-jar
           sha256sum dist-jar/*.jar
           unzip -l dist-jar/*.jar | grep -E 'neoforge.mods.toml|settledlands' | head -20
 
-      - name: Создать релиз ${{ inputs.tag }}
-        if: ${{ !inputs.dry_run }}
+      - name: Создать релиз
+        if: steps.guard.outputs.skip == 'false' && env.DRY_RUN != 'true'
         run: |
-          gh release create '${{ inputs.tag }}' dist-jar/*.jar \
+          gh release create "$TAG" dist-jar/*.jar \
             --repo "$GH_REPO" \
-            --target '${{ inputs.target_sha }}' \
-            --title '${{ inputs.title }}' \
-            --notes-file '${{ inputs.notes_file }}'
+            --target "$TARGET_SHA" \
+            --title "$TITLE" \
+            --notes-file "$NOTES_FILE"
 
       - name: Проверить результат
-        if: ${{ !inputs.dry_run }}
+        if: steps.guard.outputs.skip == 'false' && env.DRY_RUN != 'true'
         run: |
-          gh release view '${{ inputs.tag }}' --repo "$GH_REPO"
+          gh release view "$TAG" --repo "$GH_REPO"
