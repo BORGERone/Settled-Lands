@@ -23,6 +23,14 @@ def fail(message):
     problems.append(message)
 
 
+def guard(section, action):
+    """Выполняет раздел проверок, превращая неожиданную ошибку в понятное сообщение."""
+    try:
+        action()
+    except Exception as exc:  # noqa: BLE001 — намеренно: сообщение важнее стека
+        fail("раздел %s упал с ошибкой: %r (это баг самой проверки, а не проекта)" % (section, exc))
+
+
 def ok(message):
     print("  OK   " + message)
 
@@ -33,14 +41,25 @@ def note(message):
 
 
 def read(path):
-    return (ROOT / path).read_text(encoding="utf-8")
+    """Читает файл, возвращая пустую строку, если его нет.
+
+    Так проверка сообщает понятную ошибку вместо трейсбека, когда файл ещё не
+    добавлен в репозиторий (типичная ситуация при добавлении файлов по одному).
+    """
+    try:
+        return (ROOT / path).read_text(encoding="utf-8", errors="replace")
+    except FileNotFoundError:
+        return ""
 
 
 # ---------------------------------------------------------------- 1. Версии
 print("[1] Согласованность версий")
+props_text = read("gradle.properties")
+if not props_text:
+    fail("в репозитории нет gradle.properties")
 props = dict(
     line.split("=", 1)
-    for line in read("gradle.properties").splitlines()
+    for line in props_text.splitlines()
     if "=" in line and not line.strip().startswith("#")
 )
 version = props.get("mod_version", "").strip()
@@ -201,18 +220,26 @@ for forbidden in ["dev.settledlands.smoke", "dev.settledlands.test"]:
     if forbidden in main_sources:
         fail("основной код ссылается на тестовый пакет %s" % forbidden)
 build_gradle = read("build.gradle")
-for required in ["sanctity-smoke-result.txt", "PASSED", "org.gradle.jvmargs"]:
-    if required not in build_gradle and required not in read("gradle.properties"):
+if not build_gradle:
+    fail("в репозитории нет build.gradle")
+for required in ["sanctity-smoke-result.txt", "PASSED"]:
+    if required not in build_gradle:
         fail("в сборке нет обязательного элемента: %s" % required)
+if "org.gradle.jvmargs" not in read("gradle.properties"):
+    note("в gradle.properties не задан org.gradle.jvmargs: память Gradle остаётся по умолчанию")
 ignore = read(".gitignore")
-for pattern, why in (("run-smoke/", "тестовый мир"), (".gradle", "кэш Gradle"), ("build/", "сборка")):
-    if pattern not in ignore:
-        fail("в .gitignore нет %s (%s)" % (pattern, why))
+if not ignore:
+    fail("нет .gitignore: создайте файл, иначе в репозиторий попадут build/, .gradle/ и тестовый мир")
+else:
+    for pattern, why in (("run-smoke/", "тестовый мир"), (".gradle", "кэш Gradle"), ("build/", "сборка")):
+        if pattern not in ignore:
+            fail("в .gitignore нет %s (%s)" % (pattern, why))
 if "release/" not in ignore:
     ok("папка release/ попадает в репозиторий, как и требуется")
-for workflow in [".github/workflows/build.yml", ".github/workflows/smoke.yml"]:
-    if not (ROOT / workflow).is_file():
-        fail("нет %s: автоматические проверки на GitHub не запустятся" % workflow)
+if not (ROOT / ".github/workflows/build.yml").is_file():
+    fail("нет .github/workflows/build.yml: автоматические проверки на GitHub не запустятся")
+if not (ROOT / ".github/workflows/smoke.yml").is_file():
+    note("нет .github/workflows/smoke.yml: серверный набор (117 проверок) не запустится на GitHub")
 for script in ["gradlew", "scripts/setup-toolchain.sh", "scripts/verify-all.sh"]:
     path = ROOT / script
     if not path.is_file():

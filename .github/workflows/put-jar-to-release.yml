@@ -1,0 +1,87 @@
+name: Put jar into release folder
+
+# Кладёт собранный JAR в папку release/ репозитория и фиксирует его sha256.
+#
+# Зачем: в песочнице нет JDK и закрыто хранилище артефактов, поэтому JAR может
+# взять только Actions — и только из артефакта прогона Build (не из ручной сборки).
+#
+# Запуск: Actions -> Put jar into release folder -> Run workflow.
+# Поля: run_id (прогон Build) и version.
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'ID прогона Build, откуда взять JAR'
+        required: true
+        type: string
+      version:
+        description: 'Версия мода, например 0.5.1'
+        required: true
+        type: string
+permissions:
+  contents: write   # коммит JAR в репозиторий
+  actions: read     # скачивание артефакта прогона Build
+
+env:
+  RUN_ID: ${{ inputs.run_id || '36549869062' }}
+  VERSION: ${{ inputs.version || '0.5.1' }}
+
+jobs:
+  put:
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Пропустить, если JAR этой версии уже лежит в репозитории
+        id: guard
+        run: |
+          if [ -f "release/settledlands-$VERSION.jar" ]; then
+            echo "release/settledlands-$VERSION.jar уже в репозитории — пропускаем."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Скачать JAR из артефакта прогона ${{ env.RUN_ID }}
+        if: steps.guard.outputs.skip == 'false'
+        run: |
+          rm -rf dist-jar
+          gh run download "$RUN_ID" -n settledlands-jar -D dist-jar --repo "$GH_REPO"
+
+      - name: Положить JAR в release/ и посчитать отпечаток
+        if: steps.guard.outputs.skip == 'false'
+        run: |
+          JAR_PATH="$(find dist-jar -name '*.jar' | head -1)"
+          if [ -z "$JAR_PATH" ]; then
+            echo "В артефакте нет JAR"
+            exit 1
+          fi
+          echo "Версия внутри JAR:"
+          unzip -p "$JAR_PATH" META-INF/neoforge.mods.toml | grep -m1 '^version='
+          mkdir -p release
+          cp "$JAR_PATH" "release/settledlands-$VERSION.jar"
+          {
+            echo "# Отпечаток файла release/settledlands-$VERSION.jar"
+            echo "# Прогон Build: $RUN_ID — https://github.com/$GH_REPO/actions/runs/$RUN_ID"
+            sha256sum "release/settledlands-$VERSION.jar"
+            echo "# Размер: $(wc -c < "release/settledlands-$VERSION.jar") байт"
+          } > "release/sha256-$VERSION.txt"
+          cat "release/sha256-$VERSION.txt"
+
+      - name: Статические проверки (включая проверку JAR)
+        if: steps.guard.outputs.skip == 'false'
+        run: python3 tools/static-check.py
+
+      - name: Зафиксировать в репозитории
+        if: steps.guard.outputs.skip == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add release/
+          git commit -m "release: JAR $VERSION из прогона Build $RUN_ID"
+          git push origin "HEAD:arena/01a0ec40-settled-lands"
