@@ -19,14 +19,6 @@ on:
         description: 'Версия мода, например 0.5.1'
         required: true
         type: string
-  # ВРЕМЕННО: токен сессии не имеет права actions:write и не может запустить
-  # workflow_dispatch через API. После первого прогона блок удаляется.
-  push:
-    paths-ignore:
-      - 'release/**'
-    branches:
-      - arena/01a0ec40-settled-lands
-
 permissions:
   contents: write   # коммит JAR в репозиторий
   actions: read     # скачивание артефакта прогона Build

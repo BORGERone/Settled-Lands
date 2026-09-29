@@ -85,7 +85,11 @@ CI=true ./gradlew runServer -PsanctitySmoke --no-daemon
 - Отложенная мелочь: `client/ClientSetup.java` использует `Bus`/`bus()` в
   `@EventBusSubscriber` — в NeoForge это помечено как удаляемое, сборка предупреждает.
   Правка кода = новая версия мода.
-- Артефакт сборки: `build/libs/settledlands-<версия>.jar`. В репозиторий JAR не кладём:
+- Готовый JAR лежит в `release/settledlands-<версия>.jar` (плюс `release/sha256-<версия>.txt`).
+  Кладёт его workflow `put-jar-to-release.yml` (ручной запуск, поля `run_id` и `version`):
+  берёт JAR из артефакта прогона `Build` и прогоняет `static-check.py` до коммита.
+  В папке `release/` держим только JAR актуальной версии.
+- Артефакт сборки: `build/libs/settledlands-<версия>.jar`.
   релиз публикуется из артефакта прогона `Build` workflow `publish-release.yml`
   (Actions → Publish release → Run workflow), игрок качает файл со страницы **Releases**.
   Старые JAR 0.4.4 из `dist/` и `release/` удалены при мерже 0.5.0 — не возвращайте их.

@@ -43,6 +43,15 @@
 | [Build 36547119457](https://github.com/BORGERone/Settled-Lands/actions/runs/36547119457) | статические проверки, сборка, 36 unit-тестов | зелёный, 1 мин 35 с |
 | [Integration suite 36547423375](https://github.com/BORGERone/Settled-Lands/actions/runs/36547423375) | серверный набор на коде 0.5.1 | зелёный, маркер `PASSED 117` |
 
+Готовый JAR 0.5.1 лежит в репозитории: `release/settledlands-0.5.1.jar`,
+90 752 байта, sha256 `b139c5e049859092a69b517f071fc9e76aab40ed77151f7a9dd9d199c898cd4f`
+(продублирован в `release/sha256-0.5.1.txt`). Файл взят из артефакта прогона
+[Build 36549869062](https://github.com/BORGERone/Settled-Lands/actions/runs/36549869062)
+и проверен `tools/static-check.py` до коммита: имя совпадает с версией, внутри
+`META-INF/neoforge.mods.toml` указана 0.5.1, тестового кода в JAR нет
+(проверил локально после `git pull`, прогон статических проверок зелёный).
+Отпечаток отличается от 0.5.0 (`61858a71…`): это другой файл, версия в нём другая.
+
 Релиз 0.5.1 будет опубликован **после влития PR #2 в main** — см. ниже, почему
 иначе нельзя.
 

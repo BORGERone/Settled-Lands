@@ -47,12 +47,16 @@
 | [GITHUB.md](GITHUB.md) | Как залить репозиторий и как продолжить работу в новом ИИ-диалоге. |
 | [CHANGELOG-0.5.1.md](CHANGELOG-0.5.1.md) | История версий: 0.2.0, 0.3.0, 0.4.0, 0.4.1, 0.4.2, 0.4.3, 0.4.4, 0.5.0, 0.5.1. |
 
-Готовый файл мода — на странице релизов:
-[**Releases → 0.5.1**](https://github.com/BORGERone/Settled-Lands/releases/tag/v0.5.1),
-файл `settledlands-0.5.1.jar` (собран в GitHub Actions; размер и sha256 указаны
-в описании релиза).
-JAR в репозитории не лежит: единственное место, откуда его скачивает игрок, — релиз.
-Как публикуется релиз и откуда берётся файл — в `GITHUB.md`.
+**Готовый файл мода лежит прямо в репозитории:**
+[`release/settledlands-0.5.1.jar`](release/settledlands-0.5.1.jar)
+(90 752 байта, sha256 `b139c5e049859092a69b517f071fc9e76aab40ed77151f7a9dd9d199c898cd4f`;
+отпечаток продублирован в [`release/sha256-0.5.1.txt`](release/sha256-0.5.1.txt)).
+Файл собран в GitHub Actions (прогон `Build` 36549869062), а не на чьём-то компьютере.
+
+Скачать можно и со страницы релизов:
+[**Releases → 0.5.0**](https://github.com/BORGERone/Settled-Lands/releases/tag/v0.5.0) —
+там лежит предыдущая версия. В `release/` всегда один JAR — актуальной версии,
+чтобы в `mods` случайно не оказалось двух разных.
 Исходная модель с анимациями: [`animation-source/defiler.bbmodel`](animation-source/defiler.bbmodel).
 
 ## Установка
