@@ -71,7 +71,7 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: ВРЕМЕННО: маркер и число проверок в комментарий PR #2
+      - name: "ВРЕМЕННО: маркер и число проверок в комментарий PR #2"
         if: always()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
