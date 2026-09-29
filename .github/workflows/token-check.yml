@@ -1,7 +1,7 @@
 name: Token check
 
-# ВРЕМЕННЫЙ workflow: проверяет, какие права на запись есть у GITHUB_TOKEN
-# в этом репозитории. Удаляется сразу после проверки.
+# ВРЕМЕННЫЙ workflow: ищем, на каком именно вызове gh release create получает 403.
+# Удаляется сразу после проверки.
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
 
 permissions:
   contents: write
-  issues: write
+  actions: read
   pull-requests: write
 
 jobs:
@@ -20,38 +20,48 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GH_REPO: ${{ github.repository }}
     steps:
-      - name: Проверить права на запись
+      - uses: actions/checkout@v7
+
+      - name: Подготовить файлы
+        run: |
+          echo "примечания" > notes.md
+          echo "test" > test-asset.txt
+          echo "$GITHUB_SHA"
+
+      - name: Попытки
         run: |
           {
-            echo "Права GITHUB_TOKEN в $GH_REPO (прогон ${{ github.run_id }})"
+            echo "Прогон ${{ github.run_id }}, коммит $GITHUB_SHA"
             echo ""
-            echo "--- issues: пробуем поставить метку на PR #2"
-            if gh api -X POST "repos/$GH_REPO/issues/2/labels" -f 'labels[]=ci-token-check' >/dev/null 2>&1; then
-              echo "OK: запись в issues есть"
-              gh api -X DELETE "repos/$GH_REPO/issues/2/labels/ci-token-check" >/dev/null 2>&1 || true
-            else
-              echo "ОТКАЗ: записи в issues нет"
-            fi
+            echo "=== A: gh release create с --target (как в publish-release)"
+            gh release create v-tc-a test-asset.txt --repo "$GH_REPO" \
+              --target "$GITHUB_SHA" --title "tc-a" --notes-file notes.md 2>&1
+            echo "код: $?"
             echo ""
-            echo "--- contents: пробуем создать тестовый релиз"
-            out=$(gh api -X POST "repos/$GH_REPO/releases" \
-              -f tag_name=v-token-check \
-              -f name=token-check \
-              -f body=temp 2>&1)
-            if [ $? -eq 0 ]; then
-              echo "OK: релиз создан, contents:write есть"
-              gh api -X DELETE "repos/$GH_REPO/releases/tags/v-token-check" >/dev/null 2>&1 || true
-              gh api -X DELETE "repos/$GH_REPO/git/refs/tags/v-token-check" >/dev/null 2>&1 || true
-            else
-              echo "ОТКАЗ: $out"
-            fi
+            echo "=== B: gh api POST /releases (без --target)"
+            gh api -X POST "repos/$GH_REPO/releases" -f tag_name=v-tc-b -f name=tc-b -f body=temp 2>&1
+            echo "код: $?"
             echo ""
-            echo "Если обе проверки ОТКАЗ — в настройках репозитория включён режим"
-            echo "«только чтение»: Settings -> Actions -> General -> Workflow permissions."
+            echo "=== C: gh release create без --target"
+            gh release create v-tc-c test-asset.txt --repo "$GH_REPO" --title "tc-c" --notes-file notes.md 2>&1
+            echo "код: $?"
+            echo ""
+            echo "=== D: только создание тега через git ref"
+            gh api -X POST "repos/$GH_REPO/git/refs" -f ref=refs/tags/v-tc-d -f sha="$GITHUB_SHA" 2>&1
+            echo "код: $?"
           } > check.txt 2>&1
-          cat check.txt
+
+      - name: Уборка
+        if: always()
+        run: |
+          for tag in v-tc-a v-tc-b v-tc-c v-tc-d; do
+            gh api -X DELETE "repos/$GH_REPO/releases/tags/$tag" >/dev/null 2>&1 || true
+            gh api -X DELETE "repos/$GH_REPO/git/refs/tags/$tag" >/dev/null 2>&1 || true
+          done
+          echo "уборка сделана" >> check.txt
 
       - name: Результат в комментарий PR #2
+        if: always()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
