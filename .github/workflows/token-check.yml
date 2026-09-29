@@ -32,29 +32,19 @@ jobs:
         run: |
           {
             echo "Прогон ${{ github.run_id }}, коммит $GITHUB_SHA"
-            echo ""
-            echo "=== A: gh release create с --target (как в publish-release)"
-            gh release create v-tc-a test-asset.txt --repo "$GH_REPO" \
-              --target "$GITHUB_SHA" --title "tc-a" --notes-file notes.md 2>&1
-            echo "код: $?"
-            echo ""
-            echo "=== B: gh api POST /releases (без --target)"
-            gh api -X POST "repos/$GH_REPO/releases" -f tag_name=v-tc-b -f name=tc-b -f body=temp 2>&1
-            echo "код: $?"
-            echo ""
-            echo "=== C: gh release create без --target"
-            gh release create v-tc-c test-asset.txt --repo "$GH_REPO" --title "tc-c" --notes-file notes.md 2>&1
-            echo "код: $?"
-            echo ""
-            echo "=== D: только создание тега через git ref"
-            gh api -X POST "repos/$GH_REPO/git/refs" -f ref=refs/tags/v-tc-d -f sha="$GITHUB_SHA" 2>&1
-            echo "код: $?"
+            for tag in v0.9.9 v1.0.0 v-tc-a; do
+              echo ""
+              echo "=== тег $tag (gh release create --target)"
+              gh release create "$tag" test-asset.txt --repo "$GH_REPO" \
+                --target "$GITHUB_SHA" --title "$tag" --notes-file notes.md 2>&1
+              echo "код: $?"
+            done
           } > check.txt 2>&1
 
       - name: Уборка
         if: always()
         run: |
-          for tag in v-tc-a v-tc-b v-tc-c v-tc-d; do
+          for tag in v0.9.9 v1.0.0 v-tc-a; do
             gh api -X DELETE "repos/$GH_REPO/releases/tags/$tag" >/dev/null 2>&1 || true
             gh api -X DELETE "repos/$GH_REPO/git/refs/tags/$tag" >/dev/null 2>&1 || true
           done
