@@ -1,0 +1,59 @@
+name: Token check
+
+# ВРЕМЕННЫЙ workflow: проверяет, какие права на запись есть у GITHUB_TOKEN
+# в этом репозитории. Удаляется сразу после проверки.
+
+on:
+  push:
+    paths:
+      - '.github/workflows/token-check.yml'
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Проверить права на запись
+        run: |
+          {
+            echo "Права GITHUB_TOKEN в $GH_REPO (прогон ${{ github.run_id }})"
+            echo ""
+            echo "--- issues: пробуем поставить метку на PR #2"
+            if gh api -X POST "repos/$GH_REPO/issues/2/labels" -f 'labels[]=ci-token-check' >/dev/null 2>&1; then
+              echo "OK: запись в issues есть"
+              gh api -X DELETE "repos/$GH_REPO/issues/2/labels/ci-token-check" >/dev/null 2>&1 || true
+            else
+              echo "ОТКАЗ: записи в issues нет"
+            fi
+            echo ""
+            echo "--- contents: пробуем создать тестовый релиз"
+            out=$(gh api -X POST "repos/$GH_REPO/releases" \
+              -f tag_name=v-token-check \
+              -f name=token-check \
+              -f body=temp 2>&1)
+            if [ $? -eq 0 ]; then
+              echo "OK: релиз создан, contents:write есть"
+              gh api -X DELETE "repos/$GH_REPO/releases/tags/v-token-check" >/dev/null 2>&1 || true
+              gh api -X DELETE "repos/$GH_REPO/git/refs/tags/v-token-check" >/dev/null 2>&1 || true
+            else
+              echo "ОТКАЗ: $out"
+            fi
+            echo ""
+            echo "Если обе проверки ОТКАЗ — в настройках репозитория включён режим"
+            echo "«только чтение»: Settings -> Actions -> General -> Workflow permissions."
+          } > check.txt 2>&1
+          cat check.txt
+
+      - name: Результат в комментарий PR #2
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh pr comment 2 --repo "$GH_REPO" --body-file check.txt || true
