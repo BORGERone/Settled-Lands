@@ -33,27 +33,22 @@ jobs:
           {
             echo "Прогон ${{ github.run_id }}, коммит $GITHUB_SHA"
             echo ""
-            echo "=== 1) v0.5.1 --target HEAD ($GITHUB_SHA)"
-            gh release create "v0.5.1" test-asset.txt --repo "$GH_REPO" \
-              --target "$GITHUB_SHA" --title "0.5.1" --notes-file notes.md 2>&1
+            echo "=== E: v0.5.4 --target 82ce611 (HEAD ветки main)"
+            gh release create "v0.5.4" test-asset.txt --repo "$GH_REPO" \
+              --target "82ce611c36150be332f72413e882bb95f53b65b1" \
+              --title "0.5.4" --notes-file notes.md 2>&1
             echo "код: $?"
             echo ""
-            echo "=== 2) v0.5.2 --target c13e1ee (коммит из publish-release)"
-            gh release create "v0.5.2" test-asset.txt --repo "$GH_REPO" \
-              --target "c13e1ee4c79d114518fc5a5286ffc0c626ba50df" \
-              --title "0.5.2" --notes-file notes.md 2>&1
-            echo "код: $?"
-            echo ""
-            echo "=== 3) v0.5.3 без --target"
-            gh release create "v0.5.3" test-asset.txt --repo "$GH_REPO" \
-              --title "0.5.3" --notes-file notes.md 2>&1
+            echo "=== F: v0.5.5 --target b66d742 (коммит слияния main в ветку)"
+            gh release create "v0.5.5" test-asset.txt --repo "$GH_REPO" \
+              --target "b66d742" --title "0.5.5" --notes-file notes.md 2>&1
             echo "код: $?"
           } > check.txt 2>&1
 
       - name: Уборка
         if: always()
         run: |
-          for tag in v0.5.1 v0.5.2 v0.5.3; do
+          for tag in v0.5.1 v0.5.2 v0.5.3 v0.5.4 v0.5.5; do
             gh api -X DELETE "repos/$GH_REPO/releases/tags/$tag" >/dev/null 2>&1 || true
             gh api -X DELETE "repos/$GH_REPO/git/refs/tags/$tag" >/dev/null 2>&1 || true
           done
