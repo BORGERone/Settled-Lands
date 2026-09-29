@@ -1,0 +1,4 @@
+# Отпечаток файла release/settledlands-0.5.1.jar
+# Прогон Build: 36549869062 — https://github.com/BORGERone/Settled-Lands/actions/runs/36549869062
+b139c5e049859092a69b517f071fc9e76aab40ed77151f7a9dd9d199c898cd4f  release/settledlands-0.5.1.jar
+# Размер: 90752 байт
