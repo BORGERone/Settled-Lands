@@ -7,9 +7,9 @@ name: Publish release
 # а Actions — может. Так релиз всегда собирается из артефакта CI, а не из файла,
 # сделанного руками.
 #
-# Как запустить вручную (после мержа в main):
-#   Actions -> Publish release -> Run workflow -> указать run_id, tag, target_sha.
-# Значения по умолчанию ниже - это релиз 0.5.0; их же использует запуск по push.
+# Как запустить: Actions -> Publish release -> Run workflow -> заполнить поля.
+# Значения по умолчанию - это релиз 0.5.0 (уже опубликован): повторный запуск
+# ничего не испортит, workflow увидит существующий релиз и пропустит публикацию.
 
 on:
   workflow_dispatch:
@@ -49,12 +49,6 @@ on:
         required: false
         default: false
         type: boolean
-  # Временный запуск по push: нужен, потому что токен сессии не имеет права
-  # actions:write и не может запустить workflow через API. После публикации
-  # релиза этот блок удаляется, остаётся только ручной запуск.
-  push:
-    paths:
-      - '.github/workflows/publish-release.yml'
 
 permissions:
   contents: write   # создание релиза и тега
@@ -83,7 +77,7 @@ jobs:
         id: guard
         run: |
           if gh release view "$TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
-            echo "Релиз $TAG уже существует - ничего не публикуем."
+            echo "Релиз $TAG уже существует - публикацию пропускаем."
             echo "skip=true" >> "$GITHUB_OUTPUT"
           else
             echo "skip=false" >> "$GITHUB_OUTPUT"
