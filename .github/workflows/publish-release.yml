@@ -145,12 +145,23 @@ jobs:
 
       - name: Создать релиз
         if: steps.guard.outputs.skip == 'false' && env.DRY_RUN != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # ВРЕМЕННО: вывод команды сохраняем и дублируем в комментарий PR,
+          # потому что из песочницы логи недоступны.
+          set +e
+          echo "TAG=$TAG TARGET=$TARGET_SHA NOTES=$NOTES_FILE JAR=$JAR_PATH" > rel.txt
           gh release create "$TAG" "$JAR_PATH" \
             --repo "$GH_REPO" \
             --target "$TARGET_SHA" \
             --title "$TITLE" \
-            --notes-file "$NOTES_FILE"
+            --notes-file "$NOTES_FILE" >> rel.txt 2>&1
+          code=$?
+          echo "код возврата: $code" >> rel.txt
+          cat rel.txt
+          gh pr comment 2 --repo "$GH_REPO" --body-file rel.txt || true
+          exit $code
 
       - name: Проверить результат
         if: steps.guard.outputs.skip == 'false' && env.DRY_RUN != 'true'
