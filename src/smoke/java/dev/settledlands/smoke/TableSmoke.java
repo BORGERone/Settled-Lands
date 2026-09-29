@@ -17,10 +17,13 @@ import net.minecraft.world.level.block.entity.BannerPatternLayers;
 import net.minecraft.world.level.block.entity.BannerPatterns;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.common.util.FakePlayerFactory;
-import java.util.Arrays;
-/** Proves that Sanctity II can actually be obtained in game, not only in data. */
+/** Proves that Sanctity II can actually be obtained in game, not only in data.
+ *  Row prices are rolled independently by vanilla, so the cheapest offer may sit in any row:
+ *  no check here assumes which row number shows what. Every loop iteration ends with a real
+ *  purchase, because the player seed refreshes only on success — without it all rolls stick. */
 public final class TableSmoke {
     private static int checks;
+    private static int nextMenuId=500;
     private static void check(boolean condition,String name) {if(!condition)throw new AssertionError(name);System.out.println("TABLE CHECK OK: "+name);checks++;}
     public static int run(MinecraftServer server) {
         ServerLevel level=server.overworld();
@@ -36,41 +39,80 @@ public final class TableSmoke {
         report(level,5,"weak table, 5 shelves");
         report(level,10,"medium table, 10 shelves");
         report(level,15,"full table, 15 shelves");
-        // Level I must be obtainable even from a weak table, and from every row of a full one.
-        int[] weak=clickRow(level,table,5,2,25);
-        check(weak[1]>0,"a weak five shelf table still gives level I: "+Arrays.toString(weak));
-        check(weak[2]==0,"a weak table can never give level II: "+Arrays.toString(weak));
-        int[] weakFirst=clickRow(level,table,5,0,25);
-        check(weakFirst[1]>0,"even the first row of a weak table gives level I: "+Arrays.toString(weakFirst));
-        int[] fullTop=clickRow(level,table,15,2,40);
-        check(fullTop[2]>0&&fullTop[1]==0,"the top row of a full table gives level II only: "+Arrays.toString(fullTop));
-        int[] fullFirst=clickRow(level,table,15,0,25);
-        check(fullFirst[1]>0,"the first row of a full table gives level I: "+Arrays.toString(fullFirst));
-        int[] levels=new int[4];
-        int offered=0,clues=0,costMin=Integer.MAX_VALUE,costMax=0;
-        EnchantmentMenu menu=new EnchantmentMenu(151,player.getInventory(),ContainerLevelAccess.create(level,table));
-        for(int i=0;i<60;i++) {
-            menu.getSlot(0).set(new ItemStack(Items.WHITE_BANNER));
+        int sanctityId=level.registryAccess().registryOrThrow(Registries.ENCHANTMENT).getId(enchant.value());
+        // Weak table: level I in exactly one row, the rest blank; blank rows are dead slots.
+        library(level,table,5);
+        int weakOne=0,weakDup=0,weakBlank=0,weakBought=0;
+        for(int i=0;i<25;i++) {
+            EnchantmentMenu menu=freshBannerMenu(level,table,player);
+            if(countOffers(menu,sanctityId,1)==1)weakOne++;
+            if(duplicateOffer(menu))weakDup++;
+            int blank=blankRow(menu);
+            int levels=player.experienceLevel,lapis=menu.getSlot(1).getItem().getCount();
+            if(blank>=0&&!menu.clickMenuButton(player,blank)&&player.experienceLevel==levels
+                &&menu.getSlot(1).getItem().getCount()==lapis
+                &&EnchantmentHelper.getItemEnchantmentLevel(enchant,menu.getSlot(0).getItem())==0)weakBlank++;
+            int offered=findRow(menu,sanctityId,1);
+            if(offered>=0&&menu.clickMenuButton(player,offered)
+                &&EnchantmentHelper.getItemEnchantmentLevel(enchant,menu.getSlot(0).getItem())==1)weakBought++;
+        }
+        check(weakOne==25,"weak table offers level I in exactly one row: "+weakOne+"/25");
+        check(weakDup==0,"weak table never shows the same offer twice: "+weakDup+" duplicates/25");
+        check(weakBlank==25,"weak table rows without offers refuse clicks and consume nothing: "+weakBlank+"/25");
+        check(weakBought==25,"weak table always sells level I from its offered row: "+weakBought+"/25");
+        // Full table: level I in exactly one row, level II in exactly one other row.
+        library(level,table,15);
+        int fullOne=0,fullOther=0,fullDup=0,fullBlank=0,fullBoughtI=0,fullBoughtII=0;
+        for(int i=0;i<40;i++) {
+            EnchantmentMenu menu=freshBannerMenu(level,table,player);
+            int iRow=findRow(menu,sanctityId,1),iiRow=findRow(menu,sanctityId,2);
+            if(countOffers(menu,sanctityId,1)==1)fullOne++;
+            if(countOffers(menu,sanctityId,2)==1&&iiRow>=0&&iiRow!=iRow)fullOther++;
+            if(duplicateOffer(menu))fullDup++;
+            int blank=blankRow(menu);
+            int levels=player.experienceLevel,lapis=menu.getSlot(1).getItem().getCount();
+            if(blank>=0&&!menu.clickMenuButton(player,blank)&&player.experienceLevel==levels
+                &&menu.getSlot(1).getItem().getCount()==lapis
+                &&EnchantmentHelper.getItemEnchantmentLevel(enchant,menu.getSlot(0).getItem())==0)fullBlank++;
+            if(iRow>=0&&menu.clickMenuButton(player,iRow)
+                &&EnchantmentHelper.getItemEnchantmentLevel(enchant,menu.getSlot(0).getItem())==1)fullBoughtI++;
+            EnchantmentMenu second=freshBannerMenu(level,table,player);
+            int buy=findRow(second,sanctityId,2);
+            if(buy>=0&&second.clickMenuButton(player,buy)
+                &&EnchantmentHelper.getItemEnchantmentLevel(enchant,second.getSlot(0).getItem())==2)fullBoughtII++;
+        }
+        check(fullOne==40,"full table offers level I in exactly one row: "+fullOne+"/40");
+        check(fullOther==40,"full table offers level II in exactly one other row: "+fullOther+"/40");
+        check(fullDup==0,"full table never shows the same offer twice: "+fullDup+" duplicates/40");
+        check(fullBlank==40,"full table rows without offers refuse clicks and consume nothing: "+fullBlank+"/40");
+        check(fullBoughtI==40,"full table always sells level I from its offered row: "+fullBoughtI+"/40");
+        check(fullBoughtII==40,"full table always sells level II from its offered row: "+fullBoughtII+"/40");
+        // Medium table: the no-duplicate invariant holds whatever the library rolls.
+        library(level,table,10);
+        int mediumDup=0,mediumBought=0;
+        for(int i=0;i<25;i++) {
+            EnchantmentMenu menu=freshBannerMenu(level,table,player);
+            if(duplicateOffer(menu))mediumDup++;
+            int offered=findRow(menu,sanctityId,1);
+            if(offered>=0&&menu.clickMenuButton(player,offered)
+                &&EnchantmentHelper.getItemEnchantmentLevel(enchant,menu.getSlot(0).getItem())==1)mediumBought++;
+        }
+        check(mediumDup==0,"medium table never shows the same offer twice: "+mediumDup+" duplicates/25");
+        check(mediumBought==25,"medium table always sells level I from its offered row: "+mediumBought+"/25");
+        // Dedup must not touch other items: a sword keeps all three vanilla rows.
+        library(level,table,15);
+        int swordRows=0,swordBought=0;
+        for(int i=0;i<10;i++) {
+            EnchantmentMenu menu=new EnchantmentMenu(nextMenuId++,player.getInventory(),ContainerLevelAccess.create(level,table));
+            menu.getSlot(0).set(new ItemStack(Items.DIAMOND_SWORD));
             menu.getSlot(1).set(new ItemStack(Items.LAPIS_LAZULI,3));
             player.experienceLevel=1000;
-            if(menu.costs[2]<=0)continue;
-            offered++;costMin=Math.min(costMin,menu.costs[2]);costMax=Math.max(costMax,menu.costs[2]);
-            if(menu.levelClue[2]>=2)clues++;
-            if(!menu.clickMenuButton(player,2))continue;
-            int got=EnchantmentHelper.getItemEnchantmentLevel(enchant,menu.getSlot(0).getItem());
-            levels[Math.clamp(got,0,3)]++;
-            menu.getSlot(0).set(ItemStack.EMPTY);
+            if(menu.costs[0]>0&&menu.costs[1]>0&&menu.costs[2]>0&&menu.enchantClue[0]>=0&&menu.enchantClue[1]>=0&&menu.enchantClue[2]>=0)swordRows++;
+            if(menu.clickMenuButton(player,0))swordBought++;
         }
-        System.out.println("TABLE DEBUG full library: clicks="+offered+" levelII clues="+clues+" results="+Arrays.toString(levels));
-        check(offered>50,"a full library always offers the top row for the "+offered+"/60 rolls");
-        check(levels[2]>0,"the real enchanting table produces Sanctity II");
-        check(clues>0,"the table hint shows the level II clue, so the numeral is visible before clicking");
-        check(levels[1]+levels[2]==offered,"every click produced exactly one Sanctity, never a different amount");
-        // The roll range of a full library must sit entirely above the level II threshold.
-        System.out.println("TABLE DEBUG full library power range "+costMin+".."+costMax
-            +" vs thresholds I="+enchant.value().getMinCost(1)+" II="+enchant.value().getMinCost(2));
+        check(swordRows==10,"a diamond sword keeps all three vanilla rows offered: "+swordRows+"/10");
+        check(swordBought==10,"a diamond sword purchase succeeds: "+swordBought+"/10");
         check(enchant.value().getMinCost(2)>enchant.value().getMinCost(1),"level II asks for more than level I, so the table still shows a progression");
-        check(costMin>=enchant.value().getMinCost(2),"every full library roll reaches level II, never only level I");
         // Anvil prices: level I costs 2 levels, level II costs 6.
         BlockPos anvilPos=new BlockPos(56,120,48);level.getChunkAt(anvilPos);
         level.setBlockAndUpdate(anvilPos,Blocks.ANVIL.defaultBlockState());
@@ -114,25 +156,38 @@ public final class TableSmoke {
         System.out.println("TABLE SMOKE PASSED: "+checks+" checks");return checks;
     }
 
-    /** Clicks one row repeatedly; index 1 counts level I hits, index 2 counts level II hits. */
-    private static int[] clickRow(ServerLevel level,BlockPos table,int shelves,int row,int attempts) {
-        library(level,table,shelves);
-        var player=FakePlayerFactory.getMinecraft(level);
-        player.setGameMode(GameType.SURVIVAL);
-        player.setPos(table.getX()+.5,table.getY()+1,table.getZ()+.5);
-        var enchant=level.registryAccess().registryOrThrow(Registries.ENCHANTMENT).getHolderOrThrow(Sanctity.KEY);
-        int[] levels=new int[3];
-        EnchantmentMenu menu=new EnchantmentMenu(400+row,player.getInventory(),ContainerLevelAccess.create(level,table));
-        for(int i=0;i<attempts;i++) {
-            menu.getSlot(0).set(new ItemStack(Items.WHITE_BANNER));
-            menu.getSlot(1).set(new ItemStack(Items.LAPIS_LAZULI,3));
-            player.experienceLevel=1000;
-            if(menu.costs[row]<=0)continue;
-            if(!menu.clickMenuButton(player,row))continue;
-            int got=EnchantmentHelper.getItemEnchantmentLevel(enchant,menu.getSlot(0).getItem());
-            if(got>0)levels[Math.min(got,2)]++;
+    /** A brand-new menu rolls brand-new offers; ids stay unique so menus never clash. */
+    private static EnchantmentMenu freshBannerMenu(ServerLevel level,BlockPos table,net.minecraft.server.level.ServerPlayer player) {
+        EnchantmentMenu menu=new EnchantmentMenu(nextMenuId++,player.getInventory(),ContainerLevelAccess.create(level,table));
+        menu.getSlot(0).set(new ItemStack(Items.WHITE_BANNER));
+        menu.getSlot(1).set(new ItemStack(Items.LAPIS_LAZULI,3));
+        player.experienceLevel=1000;
+        return menu;
+    }
+    /** How many rows offer this enchantment at this level. */
+    private static int countOffers(EnchantmentMenu menu,int clue,int level) {
+        int found=0;
+        for(int i=0;i<3;i++)if(menu.costs[i]>0&&menu.enchantClue[i]==clue&&menu.levelClue[i]==level)found++;
+        return found;
+    }
+    /** First row showing this offer, or -1 when no row shows it. */
+    private static int findRow(EnchantmentMenu menu,int clue,int level) {
+        for(int i=0;i<3;i++)if(menu.costs[i]>0&&menu.enchantClue[i]==clue&&menu.levelClue[i]==level)return i;
+        return -1;
+    }
+    /** First row without any offer, or -1 when every row shows something. */
+    private static int blankRow(EnchantmentMenu menu) {
+        for(int i=0;i<3;i++)if(menu.costs[i]<=0||menu.enchantClue[i]<0)return i;
+        return -1;
+    }
+    /** Two offered rows showing the same enchantment at the same level. Blank rows never count. */
+    private static boolean duplicateOffer(EnchantmentMenu menu) {
+        for(int i=0;i<3;i++) {
+            if(menu.costs[i]<=0||menu.enchantClue[i]<0)continue;
+            for(int j=i+1;j<3;j++)
+                if(menu.costs[j]>0&&menu.enchantClue[j]==menu.enchantClue[i]&&menu.levelClue[j]==menu.levelClue[i])return true;
         }
-        return levels;
+        return false;
     }
     /** Measures what all three table rows show, using registry keys so the console stays readable. */
     private static void report(ServerLevel level,int shelves,String label) {

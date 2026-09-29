@@ -13,6 +13,7 @@ public final class SettledLands {
         NeoForge.EVENT_BUS.register(new Sanctity());
         NeoForge.EVENT_BUS.register(new Diagnostics());
         NeoForge.EVENT_BUS.register(new AnvilBannerMerge());
+        NeoForge.EVENT_BUS.register(new SanctityTooltip());
         bus.addListener(DebugPayload::register);
         NeoForge.EVENT_BUS.register(new dev.settledlands.ritual.RitualManager());
         bus.addListener(dev.settledlands.ritual.RitualPayload::register);
