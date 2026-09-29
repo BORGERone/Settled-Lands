@@ -7,9 +7,7 @@ name: Integration suite
 on:
   workflow_dispatch:
   push:
-    # ВРЕМЕННО: ветка добавлена, чтобы прогнать набор на коде 0.5.1
-    # (токен сессии не может запустить workflow_dispatch через API).
-    branches: [main, arena/01a0ec40-settled-lands]
+    branches: [main]
     paths:
       - 'src/**'
       - 'build.gradle'

@@ -1,43 +1,45 @@
 name: Publish release
 
-# Публикует релиз на GitHub: берёт JAR из готового артефакта указанного прогона Build
-# и вешает его на тег, поставленный на нужный коммит.
+# Публикует релиз: берёт JAR из артефакта указанного прогона Build и вешает
+# его на тег, поставленный на нужный коммит ветки main.
 #
-# Зачем: в песочнице без JDK и с закрытым хранилищем артефактов скачать JAR нельзя,
-# а Actions — может. Так релиз всегда собирается из артефакта CI, а не из файла,
-# сделанного руками.
+# Зачем: в песочнице без JDK и с закрытым хранилищем артефактов скачать JAR
+# нельзя, а Actions — может. Так релиз всегда собирается из артефакта CI,
+# а не из файла, сделанного руками.
 #
-# Как запустить: Actions -> Publish release -> Run workflow -> заполнить поля.
-# Значения по умолчанию - это релиз 0.5.0 (уже опубликован): повторный запуск
-# ничего не испортит, workflow увидит существующий релиз и пропустит публикацию.
+# ВАЖНО: запускать только ПОСЛЕ влития правок в main. GitHub не даёт токену
+# Actions создать релиз на коммите, которого нет в ветке по умолчанию
+# (ошибка 403 «Resource not accessible by integration»), а если указать HEAD
+# самого прогона — релиз создаётся черновиком. Проверено 29.09.2026.
+#
+# Как запустить: Actions -> Publish release -> Run workflow -> заполнить
+# run_id и target_sha (коммит в main), остальное уже заполнено.
 
 on:
   workflow_dispatch:
     inputs:
       run_id:
-        description: 'ID прогона Build, откуда взять JAR (например 36540243406)'
-        required: false
-        default: '36540243406'
-        type: string
-      tag:
-        description: 'Тег релиза, например v0.5.0'
-        required: false
-        default: 'v0.5.0'
+        description: 'ID прогона Build, откуда взять JAR (например 36547119457)'
+        required: true
         type: string
       target_sha:
-        description: 'Коммит, на который встанет тег'
+        description: 'Коммит в main, на который встанет тег'
+        required: true
+        type: string
+      tag:
+        description: 'Тег релиза'
         required: false
-        default: '82ce611c36150be332f72413e882bb95f53b65b1'
+        default: 'v0.5.1'
         type: string
       title:
         description: 'Заголовок релиза'
         required: false
-        default: '0.5.0'
+        default: '0.5.1'
         type: string
       notes_file:
         description: 'Файл с описанием релиза (в репозитории)'
         required: false
-        default: 'RELEASE-NOTES-0.5.0.md'
+        default: 'RELEASE-NOTES-0.5.1.md'
         type: string
       artifact_name:
         description: 'Имя артефакта с JAR'
@@ -49,22 +51,15 @@ on:
         required: false
         default: false
         type: boolean
-  # ВРЕМЕННО: токен сессии не имеет права actions:write и не может запустить
-  # workflow_dispatch через API. После публикации блок удаляется.
-  push:
-    paths:
-      - '.github/workflows/publish-release.yml'
 
 permissions:
   contents: write   # создание релиза и тега
   actions: read     # скачивание артефакта чужого прогона
-  # ВРЕМЕННО: диагностика
-  pull-requests: write
 
 env:
-  RUN_ID: ${{ inputs.run_id || '36547119457' }}
+  RUN_ID: ${{ inputs.run_id }}
+  TARGET_SHA: ${{ inputs.target_sha }}
   TAG: ${{ inputs.tag || 'v0.5.1' }}
-  TARGET_SHA: ${{ inputs.target_sha || 'c13e1ee4c79d114518fc5a5286ffc0c626ba50df' }}
   TITLE: ${{ inputs.title || '0.5.1' }}
   NOTES_FILE: ${{ inputs.notes_file || 'RELEASE-NOTES-0.5.1.md' }}
   ARTIFACT_NAME: ${{ inputs.artifact_name || 'settledlands-jar' }}
@@ -79,15 +74,29 @@ jobs:
     steps:
       - name: Checkout (за описанием релиза)
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Пропустить, если релиз уже published
         id: guard
         run: |
           if gh release view "$TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
-            echo "Релиз $TAG уже существует - публикацию пропускаем."
+            echo "Релиз $TAG уже существует — публикацию пропускаем."
             echo "skip=true" >> "$GITHUB_OUTPUT"
           else
             echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Проверить, что тег встанет на коммит из main
+        if: steps.guard.outputs.skip == 'false'
+        run: |
+          git fetch origin main
+          if git merge-base --is-ancestor "$TARGET_SHA" origin/main; then
+            echo "Коммит $TARGET_SHA достижим из main — можно публиковать."
+          else
+            echo "ОШИБКА: коммит $TARGET_SHA не достижим из main."
+            echo "GitHub не даст создать на нём релиз (403). Сначала влейте правки в main."
+            exit 1
           fi
 
       - name: Скачать JAR из артефакта прогона ${{ env.RUN_ID }}
@@ -103,44 +112,24 @@ jobs:
           # JAR ищем через find: в артефакте он может лежать и в build/libs/.
           JAR_PATH="$(find dist-jar -name '*.jar' | head -1)"
           if [ -z "$JAR_PATH" ]; then
-            echo "В артефакте нет ни одного JAR"
+            echo "В артефакте $ARTIFACT_NAME нет ни одного JAR"
             exit 1
           fi
           echo "JAR_PATH=$JAR_PATH" >> "$GITHUB_ENV"
           sha256sum "$JAR_PATH"
-          # Список содержимого пишем в файл и только потом фильтруем: канал
+          # Содержимое пишем в файл и только потом фильтруем: канал
           # unzip | grep | head обрывается по SIGPIPE, а в Actions включён pipefail.
           unzip -l "$JAR_PATH" > jar-list.txt
           grep -E 'neoforge.mods.toml|settledlands' jar-list.txt | head -20 || true
-          grep -E 'mods.toml' -A 12 jar-list.txt | head -30 || true
 
       - name: Создать релиз
         if: steps.guard.outputs.skip == 'false' && env.DRY_RUN != 'true'
         run: |
-          set +e
-          {
-            echo "cwd: $(pwd)"
-            echo "TAG=$TAG TARGET=$TARGET_SHA TITLE=$TITLE"
-            echo "NOTES=$NOTES_FILE JAR=$JAR_PATH"
-            echo "NOTES существует: $(test -f "$NOTES_FILE" && echo да || echo нет)"
-            echo "JAR существует: $(test -f "$JAR_PATH" && echo да || echo нет)"
-            echo "--- вывод gh release create:"
-          } > rel.txt 2>&1
           gh release create "$TAG" "$JAR_PATH" \
             --repo "$GH_REPO" \
             --target "$TARGET_SHA" \
             --title "$TITLE" \
-            --notes-file "$NOTES_FILE" >> rel.txt 2>&1
-          echo "код: $?" >> rel.txt
-          cat rel.txt
-
-      - name: "ВРЕМЕННО: ошибка в комментарий PR #2"
-        if: always()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          gh pr comment 2 --repo "$GH_REPO" --body-file rel.txt || true
+            --notes-file "$NOTES_FILE"
 
       - name: Проверить результат
         if: steps.guard.outputs.skip == 'false' && env.DRY_RUN != 'true'
