@@ -1,5 +1,39 @@
 # Проверки Settled Lands
 
+## Обновление CI 29.09.2026 (ветка `arena/01a0ec40-settled-lands`, PR #2)
+
+Код мода не менялся — менялись только проверки. Что прогнал сам:
+
+| Прогон | Что | Результат |
+|---|---|---|
+| [Build 36545223886](https://github.com/BORGERone/Settled-Lands/actions/runs/36545223886) | пакет правок CI на действиях v5, `ubuntu-24.04` | зелёный, 40 с |
+| [Build 36545380120](https://github.com/BORGERone/Settled-Lands/actions/runs/36545380120) | действия подняты до checkout v7 / setup-java v6 / setup-gradle v6 / upload-artifact v7 | зелёный, 1 мин 20 с |
+| [Integration suite 36545570141](https://github.com/BORGERone/Settled-Lands/actions/runs/36545570141) | серверный набор на обновлённом `smoke.yml` | зелёный, 1 мин 42 с |
+| [Integration suite 36545912085](https://github.com/BORGERone/Settled-Lands/actions/runs/36545912085) | повтор с печатью маркера | зелёный, маркер `PASSED 117` |
+
+Что изменилось в проверках:
+
+- система закреплена как `ubuntu-24.04` (метка `ubuntu-latest` с 19.10.2026 указывает
+  на другую версию);
+- действия: `actions/checkout@v7`, `actions/setup-java@v6`,
+  `gradle/actions/setup-gradle@v6`, `actions/upload-artifact@v7` — на v5 одно
+  предупреждение про Node 20 ещё оставалось, на v7/v6 оно ушло;
+- после сборки в сводку прогона печатаются размер и sha256 собранного JAR, и отдельный
+  шаг сравнивает его с JAR из `dist/` или `release/` (расхождение сборку не роняет);
+- маркер набора (`PASSED 117`) печатается в сводку прогона;
+- `tools/static-check.py` не падает с трейсбеком, если файла ещё нет в репозитории.
+
+Предупреждения в прогонах: три старых ушли (Node 20 на действиях v4, `setup-java v4`
+устарел, переезд `ubuntu-latest`). Остались две заметки от нашего кода —
+`src/main/java/dev/settledlands/client/ClientSetup.java:7`: `Bus` и `bus()` в
+`@EventBusSubscriber` помечены как удаляемые в будущих версиях NeoForge. Это не ошибка
+сборки, но поправить стоит; правка кода = новая версия мода, поэтому отдельной задачей.
+Кроме того, `gradle/actions` сообщает, что Gradle 9.2.1 можно обновить.
+
+Отдельно: маркер набора содержит число проверок (`PASSED 117`), его и читайте в сводке
+прогона. Журнал со строками `CHECK OK` по-прежнему лежит в артефакте `smoke-log`.
+
+
 ## 0.5.0 — проверено 29 сентября 2026 (GitHub Actions, ветка `arena/01a0e8cf-settled-lands`)
 
 - `Build` — зелёный: сборка + 36 unit-тестов, JAR выложен артефактом `settledlands-jar`

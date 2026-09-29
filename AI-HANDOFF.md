@@ -9,6 +9,10 @@
 зелёный (36 unit-тестов), `Integration suite` зелёный (117 проверок на чистом мире — 37+33+20+27,
 119 при повторе на том же мире; маркер `PASSED`). Ссылки на прогоны — в `VERIFICATION.md`.
 
+Проверки обновлены 29.09.2026 (PR #2): действия до checkout v7 / setup-java v6 /
+setup-gradle v6 / upload-artifact v7, система `ubuntu-24.04`, в сводке прогона печатаются
+отпечаток JAR и маркер набора (`PASSED 117`). Прогоны — в `VERIFICATION.md`.
+
 Релиз: тег `v0.5.0` на коммите `82ce611`, вложение `settledlands-0.5.0.jar`
 (90 752 байта, sha256 `61858a714c1537ee715b2e02fce913867830b2899249202dc6bb5c731983426d`) —
 тот же файл, что проверен на настоящем выделенном сервере. JAR в репозиторий не кладём:
@@ -72,6 +76,9 @@ CI=true ./gradlew runServer -PsanctitySmoke --no-daemon
   `build/moddev/artifacts/neoforge-21.1.252.jar`, смотрите его через
   `javap -classpath <jar> <класс>`. Это быстрее и не падает по памяти.
 - Если `gradlew` потерял флаг исполняемости после распаковки архива: `chmod +x gradlew`.
+- Отложенная мелочь: `client/ClientSetup.java` использует `Bus`/`bus()` в
+  `@EventBusSubscriber` — в NeoForge это помечено как удаляемое, сборка предупреждает.
+  Правка кода = новая версия мода.
 - Артефакт сборки: `build/libs/settledlands-<версия>.jar`. В репозиторий JAR не кладём:
   релиз публикуется из артефакта прогона `Build` workflow `publish-release.yml`
   (Actions → Publish release → Run workflow), игрок качает файл со страницы **Releases**.
