@@ -1,0 +1,86 @@
+name: Publish release
+
+# Публикует релиз на GitHub: берёт JAR из готового артефакта прогона Build
+# и вешает его на тег, поставленный на нужный коммит.
+#
+# Зачем: в песочнице без JDK и без доступа к хранилищу артефактов скачать JAR
+# нельзя, а Actions — может. Так релиз всегда собирается из артефакта CI,
+# а не из файла, собранного руками.
+#
+# Запуск: Actions -> Publish release -> Run workflow.
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'ID прогона Build, откуда взять JAR (например 36540243406)'
+        required: true
+        type: string
+      tag:
+        description: 'Тег релиза, например v0.5.0'
+        required: true
+        type: string
+      target_sha:
+        description: 'Коммит, на который встанет тег'
+        required: true
+        type: string
+      title:
+        description: 'Заголовок релиза'
+        required: true
+        type: string
+      notes_file:
+        description: 'Файл с описанием релиза (в репозитории)'
+        required: false
+        default: 'RELEASE-NOTES-0.5.0.md'
+        type: string
+      artifact_name:
+        description: 'Имя артефакта с JAR'
+        required: false
+        default: 'settledlands-jar'
+        type: string
+      dry_run:
+        description: 'Только скачать и показать, релиз не создавать'
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: write   # создание релиза и тега
+  actions: read     # скачивание артефакта чужого прогона
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Checkout (за описанием релиза)
+        uses: actions/checkout@v5
+
+      - name: Скачать JAR из артефакта прогона ${{ inputs.run_id }}
+        run: |
+          rm -rf dist-jar
+          gh run download '${{ inputs.run_id }}' \
+            -n '${{ inputs.artifact_name }}' \
+            -D dist-jar --repo "$GH_REPO"
+
+      - name: Показать, что скачали
+        run: |
+          ls -l dist-jar
+          sha256sum dist-jar/*.jar
+          unzip -l dist-jar/*.jar | grep -E 'neoforge.mods.toml|settledlands' | head -20
+
+      - name: Создать релиз ${{ inputs.tag }}
+        if: ${{ !inputs.dry_run }}
+        run: |
+          gh release create '${{ inputs.tag }}' dist-jar/*.jar \
+            --repo "$GH_REPO" \
+            --target '${{ inputs.target_sha }}' \
+            --title '${{ inputs.title }}' \
+            --notes-file '${{ inputs.notes_file }}'
+
+      - name: Проверить результат
+        if: ${{ !inputs.dry_run }}
+        run: |
+          gh release view '${{ inputs.tag }}' --repo "$GH_REPO"
