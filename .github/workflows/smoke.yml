@@ -17,22 +17,22 @@ on:
 
 jobs:
   smoke:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:
       CI: true
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'temurin'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v5
 
       - name: Make the wrapper executable
         run: chmod +x gradlew
@@ -55,10 +55,16 @@ jobs:
           grep -a "CHECK OK" run-smoke/logs/latest.log | tail -n 40 || true
           echo "=== tail of the log ==="
           tail -n 60 run-smoke/logs/latest.log || true
+          {
+            echo "### Результат набора"
+            echo '```'
+            cat run-smoke/sanctity-smoke-result.txt 2>/dev/null || echo "маркер не найден"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: smoke-log
           if-no-files-found: warn

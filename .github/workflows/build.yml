@@ -4,22 +4,24 @@ on: [push, pull_request, workflow_dispatch]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # Версия Ubuntu закреплена осознанно: метка ubuntu-latest с 19 октября 2026
+    # начинает указывать на другую систему, а нам нужна предсказуемость.
+    runs-on: ubuntu-24.04
     env:
       # Отключает дорогую рекомпиляцию исходников Minecraft: быстрее и без лишней памяти.
       CI: true
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'temurin'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v5
 
       - name: Make the wrapper executable
         # Файл, загруженный через веб-интерфейс GitHub, теряет флаг исполняемости.
@@ -31,9 +33,39 @@ jobs:
       - name: Сборка и unit-тесты
         run: ./gradlew build --no-daemon
 
+      - name: Отпечаток собранного JAR
+        # Печатаем размер и sha256: любой может сверить свой файл с этим отпечатком.
+        run: |
+          ls -l build/libs/*.jar
+          sha256sum build/libs/*.jar | tee jar-sha256.txt
+          {
+            echo "### Собранный мод"
+            echo '```'
+            sha256sum build/libs/*.jar
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Сверить с JAR, лежащим в репозитории
+        # Не падаем, если байты разошлись: сборка может быть не воспроизводимой.
+        # Но честно сообщаем результат в сводку прогона.
+        run: |
+          built=$(ls build/libs/*.jar | head -n1)
+          committed=$(ls dist/*.jar release/*.jar 2>/dev/null | head -n1 || true)
+          if [ -z "$committed" ]; then
+            echo "В репозитории нет готового JAR для сверки" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if cmp -s "$built" "$committed"; then
+            echo "Собранный здесь JAR совпадает с \`$committed\` байт в байт" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Собранный JAR отличается от \`$committed\` (размеры: $(stat -c%s "$built") и $(stat -c%s "$committed") байт)" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Upload the mod jar
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: settledlands-jar
-          path: build/libs/*.jar
+          path: |
+            build/libs/*.jar
+            jar-sha256.txt
           if-no-files-found: error
