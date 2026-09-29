@@ -64,8 +64,9 @@ jobs:
       - name: Upload the mod jar
         uses: actions/upload-artifact@v7
         with:
+          # Только JAR: с несколькими путями артефакт сохраняет структуру папок,
+          # и скачанный файл оказывается в build/libs/, а не в корне архива.
+          # Отпечаток уже напечатан в сводке прогона и лежит в jar-sha256.txt.
           name: settledlands-jar
-          path: |
-            build/libs/*.jar
-            jar-sha256.txt
+          path: build/libs/*.jar
           if-no-files-found: error

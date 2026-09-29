@@ -97,18 +97,25 @@ jobs:
       - name: Показать, что скачали
         if: steps.guard.outputs.skip == 'false'
         run: |
-          ls -l dist-jar
-          sha256sum dist-jar/*.jar
+          ls -lR dist-jar
+          # JAR ищем через find: в артефакте он может лежать и в build/libs/.
+          JAR_PATH="$(find dist-jar -name '*.jar' | head -1)"
+          if [ -z "$JAR_PATH" ]; then
+            echo "В артефакте нет ни одного JAR"
+            exit 1
+          fi
+          echo "JAR_PATH=$JAR_PATH" >> "$GITHUB_ENV"
+          sha256sum "$JAR_PATH"
           # Список содержимого пишем в файл и только потом фильтруем: канал
           # unzip | grep | head обрывается по SIGPIPE, а в Actions включён pipefail.
-          unzip -l dist-jar/*.jar > jar-list.txt
+          unzip -l "$JAR_PATH" > jar-list.txt
           grep -E 'neoforge.mods.toml|settledlands' jar-list.txt | head -20 || true
-          echo "Всего записей в JAR: $(grep -c '^ *[0-9]' jar-list.txt || true)"
+          grep -E 'mods.toml' -A 12 jar-list.txt | head -30 || true
 
       - name: Создать релиз
         if: steps.guard.outputs.skip == 'false' && env.DRY_RUN != 'true'
         run: |
-          gh release create "$TAG" dist-jar/*.jar \
+          gh release create "$TAG" "$JAR_PATH" \
             --repo "$GH_REPO" \
             --target "$TARGET_SHA" \
             --title "$TITLE" \
@@ -126,7 +133,7 @@ jobs:
         run: |
           rm -rf verify-jar
           gh release download "$TAG" -D verify-jar --repo "$GH_REPO"
-          JAR_PATH="$(ls verify-jar/*.jar | head -1)"
+          JAR_PATH="$(find verify-jar -name '*.jar' | head -1)"
           JAR_NAME="$(basename "$JAR_PATH")"
           JAR_SIZE="$(wc -c < "$JAR_PATH")"
           JAR_SHA="$(sha256sum "$JAR_PATH" | cut -d' ' -f1)"
