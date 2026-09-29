@@ -115,3 +115,33 @@ jobs:
         if: steps.guard.outputs.skip == 'false' && env.DRY_RUN != 'true'
         run: |
           gh release view "$TAG" --repo "$GH_REPO"
+
+      - name: Отпечаток опубликованного файла (в описание релиза)
+        # Скачиваем ровно тот файл, который лежит в релизе, и дописываем его
+        # размер и sha256 в описание: игрок может сверить скачанное.
+        if: env.DRY_RUN != 'true'
+        run: |
+          rm -rf verify-jar
+          gh release download "$TAG" -D verify-jar --repo "$GH_REPO"
+          JAR_PATH="$(ls verify-jar/*.jar | head -1)"
+          JAR_NAME="$(basename "$JAR_PATH")"
+          JAR_SIZE="$(wc -c < "$JAR_PATH")"
+          JAR_SHA="$(sha256sum "$JAR_PATH" | cut -d' ' -f1)"
+          echo "Файл: $JAR_NAME, $JAR_SIZE байт, sha256 $JAR_SHA"
+          cp "$NOTES_FILE" /tmp/release-notes.md
+          {
+            echo ""
+            echo "---"
+            echo ""
+            echo "## Контрольная сумма"
+            echo ""
+            echo "Файл \`$JAR_NAME\` — $JAR_SIZE байт, sha256:"
+            echo ""
+            echo '```'
+            echo "$JAR_SHA"
+            echo '```'
+            echo ""
+            echo "Сверить скачанное можно так: \`sha256sum $JAR_NAME\` (Linux, macOS),"
+            echo "или \`certutil -hashfile $JAR_NAME SHA256\` (Windows)."
+          } >> /tmp/release-notes.md
+          gh release edit "$TAG" --repo "$GH_REPO" --notes-file /tmp/release-notes.md
