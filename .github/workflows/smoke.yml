@@ -7,7 +7,10 @@ name: Integration suite
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    # ВРЕМЕННО: ветка добавлена, чтобы реально прогнать набор на новом smoke.yml
+    # (токен сессии не может запустить workflow_dispatch через API).
+    # После прогона строка убирается, остаётся только main.
+    branches: [main, arena/01a0ec40-settled-lands]
     paths:
       - 'src/**'
       - 'build.gradle'
