@@ -49,17 +49,22 @@ on:
         required: false
         default: false
         type: boolean
+  # ВРЕМЕННО: токен сессии не имеет права actions:write и не может запустить
+  # workflow_dispatch через API. После публикации блок удаляется.
+  push:
+    paths:
+      - '.github/workflows/publish-release.yml'
 
 permissions:
   contents: write   # создание релиза и тега
   actions: read     # скачивание артефакта чужого прогона
 
 env:
-  RUN_ID: ${{ inputs.run_id || '36540243406' }}
-  TAG: ${{ inputs.tag || 'v0.5.0' }}
-  TARGET_SHA: ${{ inputs.target_sha || '82ce611c36150be332f72413e882bb95f53b65b1' }}
-  TITLE: ${{ inputs.title || '0.5.0' }}
-  NOTES_FILE: ${{ inputs.notes_file || 'RELEASE-NOTES-0.5.0.md' }}
+  RUN_ID: ${{ inputs.run_id || '36547119457' }}
+  TAG: ${{ inputs.tag || 'v0.5.1' }}
+  TARGET_SHA: ${{ inputs.target_sha || 'c13e1ee4c79d114518fc5a5286ffc0c626ba50df' }}
+  TITLE: ${{ inputs.title || '0.5.1' }}
+  NOTES_FILE: ${{ inputs.notes_file || 'RELEASE-NOTES-0.5.1.md' }}
   ARTIFACT_NAME: ${{ inputs.artifact_name || 'settledlands-jar' }}
   DRY_RUN: ${{ inputs.dry_run || 'false' }}
 
