@@ -58,6 +58,8 @@ on:
 permissions:
   contents: write   # создание релиза и тега
   actions: read     # скачивание артефакта чужого прогона
+  # ВРЕМЕННО: диагностика
+  pull-requests: write
 
 env:
   RUN_ID: ${{ inputs.run_id || '36547119457' }}
@@ -115,11 +117,30 @@ jobs:
       - name: Создать релиз
         if: steps.guard.outputs.skip == 'false' && env.DRY_RUN != 'true'
         run: |
+          set +e
+          {
+            echo "cwd: $(pwd)"
+            echo "TAG=$TAG TARGET=$TARGET_SHA TITLE=$TITLE"
+            echo "NOTES=$NOTES_FILE JAR=$JAR_PATH"
+            echo "NOTES существует: $(test -f "$NOTES_FILE" && echo да || echo нет)"
+            echo "JAR существует: $(test -f "$JAR_PATH" && echo да || echo нет)"
+            echo "--- вывод gh release create:"
+          } > rel.txt 2>&1
           gh release create "$TAG" "$JAR_PATH" \
             --repo "$GH_REPO" \
             --target "$TARGET_SHA" \
             --title "$TITLE" \
-            --notes-file "$NOTES_FILE"
+            --notes-file "$NOTES_FILE" >> rel.txt 2>&1
+          echo "код: $?" >> rel.txt
+          cat rel.txt
+
+      - name: "ВРЕМЕННО: ошибка в комментарий PR #2"
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh pr comment 2 --repo "$GH_REPO" --body-file rel.txt || true
 
       - name: Проверить результат
         if: steps.guard.outputs.skip == 'false' && env.DRY_RUN != 'true'
