@@ -18,6 +18,12 @@ on:
       - 'smoke-server/**'
       - '.github/workflows/smoke.yml'
 
+permissions:
+  contents: read
+  # ВРЕМЕННО: маркер результата пишем в комментарий PR, потому что из песочницы
+  # не читаются ни логи, ни артефакты. После прогона блок удаляется.
+  pull-requests: write
+
 jobs:
   smoke:
     runs-on: ubuntu-24.04
@@ -64,6 +70,24 @@ jobs:
             cat run-smoke/sanctity-smoke-result.txt 2>/dev/null || echo "маркер не найден"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: ВРЕМЕННО: маркер и число проверок в комментарий PR #2
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          marker=$(cat run-smoke/sanctity-smoke-result.txt 2>/dev/null || echo "маркер не найден")
+          count=$(grep -ac "CHECK OK" run-smoke/logs/latest.log 2>/dev/null || echo 0)
+          {
+            echo "Результат прогона Integration suite ${{ github.run_id }}"
+            echo ""
+            echo '```'
+            echo "$marker"
+            echo '```'
+            echo "Строк CHECK OK в журнале: $count"
+          } > /tmp/comment.md
+          gh pr comment 2 --repo "$GH_REPO" --body-file /tmp/comment.md
 
       - name: Upload logs
         if: always()
