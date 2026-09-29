@@ -7,7 +7,7 @@ name: Integration suite
 on:
   workflow_dispatch:
   push:
-    branches: [main, arena/01a0e8cf-settled-lands]  # ВРЕМЕННО для прогона нового TableSmoke
+    branches: [main]
     paths:
       - 'src/**'
       - 'build.gradle'
