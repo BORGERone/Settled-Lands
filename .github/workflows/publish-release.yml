@@ -58,8 +58,6 @@ on:
 permissions:
   contents: write   # создание релиза и тега
   actions: read     # скачивание артефакта чужого прогона
-  # ВРЕМЕННО: диагностику пишем в комментарий PR — из песочницы логи не читаются.
-  pull-requests: write
 
 env:
   RUN_ID: ${{ inputs.run_id || '36547119457' }}
@@ -96,35 +94,6 @@ jobs:
           rm -rf dist-jar
           gh run download "$RUN_ID" -n "$ARTIFACT_NAME" -D dist-jar --repo "$GH_REPO"
 
-      - name: "ВРЕМЕННО: диагностика скачанного артефакта"
-        if: always()
-        continue-on-error: true
-        run: |
-          {
-            echo "=== ls -lR dist-jar"
-            ls -lR dist-jar
-            echo "=== find *.jar"
-            find dist-jar -name '*.jar'
-            echo "=== sha256sum по маске"
-            sha256sum dist-jar/*.jar
-            echo "=== sha256sum по find"
-            sha256sum $(find dist-jar -name '*.jar' | head -1)
-            echo "=== unzip -l"
-            unzip -l "$(find dist-jar -name '*.jar' | head -1)" > jar-list.txt
-            echo "=== первые строки списка"
-            head -25 jar-list.txt
-            echo "=== gre SettledLands/mods.toml"
-            grep -E 'mods.toml|settledlands' jar-list.txt | head -10
-          } > diag.txt 2>&1
-
-      - name: "ВРЕМЕННО: диагностика в комментарий PR #2"
-        if: always()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          gh pr comment 2 --repo "$GH_REPO" --body-file diag.txt
-
       - name: Показать, что скачали
         if: steps.guard.outputs.skip == 'false'
         run: |
@@ -145,23 +114,12 @@ jobs:
 
       - name: Создать релиз
         if: steps.guard.outputs.skip == 'false' && env.DRY_RUN != 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # ВРЕМЕННО: вывод команды сохраняем и дублируем в комментарий PR,
-          # потому что из песочницы логи недоступны.
-          set +e
-          echo "TAG=$TAG TARGET=$TARGET_SHA NOTES=$NOTES_FILE JAR=$JAR_PATH" > rel.txt
           gh release create "$TAG" "$JAR_PATH" \
             --repo "$GH_REPO" \
             --target "$TARGET_SHA" \
             --title "$TITLE" \
-            --notes-file "$NOTES_FILE" >> rel.txt 2>&1
-          code=$?
-          echo "код возврата: $code" >> rel.txt
-          cat rel.txt
-          gh pr comment 2 --repo "$GH_REPO" --body-file rel.txt || true
-          exit $code
+            --notes-file "$NOTES_FILE"
 
       - name: Проверить результат
         if: steps.guard.outputs.skip == 'false' && env.DRY_RUN != 'true'
