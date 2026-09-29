@@ -32,19 +32,22 @@ jobs:
         run: |
           {
             echo "Прогон ${{ github.run_id }}, коммит $GITHUB_SHA"
-            for tag in v0.9.9 v1.0.0 v-tc-a; do
-              echo ""
-              echo "=== тег $tag (gh release create --target)"
-              gh release create "$tag" test-asset.txt --repo "$GH_REPO" \
-                --target "$GITHUB_SHA" --title "$tag" --notes-file notes.md 2>&1
-              echo "код: $?"
-            done
+            echo ""
+            echo "=== точные параметры как в publish-release (тег v0.5.1, --target c13e1ee)"
+            gh release create "v0.5.1" test-asset.txt --repo "$GH_REPO" \
+              --target "c13e1ee4c79d114518fc5a5286ffc0c626ba50df" \
+              --title "0.5.1" --notes-file "RELEASE-NOTES-0.5.1.md" 2>&1
+            echo "код: $?"
+            echo ""
+            echo "=== тот же тег, но --verify-tag и --latest"
+            gh release view "v0.5.1" --repo "$GH_REPO" --json draft,isDraft,tagName 2>&1
+            echo "код: $?" 
           } > check.txt 2>&1
 
       - name: Уборка
         if: always()
         run: |
-          for tag in v0.9.9 v1.0.0 v-tc-a; do
+          for tag in v0.5.1; do
             gh api -X DELETE "repos/$GH_REPO/releases/tags/$tag" >/dev/null 2>&1 || true
             gh api -X DELETE "repos/$GH_REPO/git/refs/tags/$tag" >/dev/null 2>&1 || true
           done
